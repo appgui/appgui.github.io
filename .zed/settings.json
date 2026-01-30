@@ -1,0 +1,38 @@
+{
+  "autosave": "on_focus_change",
+  "auto_install_extensions": {
+    "dockerfile": true,
+    "just": true,
+    "svelte": true,
+  },
+  "file_types": {
+    "Dockerfile": ["Containerfile*"],
+  },
+  "formatter": {
+    "external": {
+      "command": "dprint",
+      "arguments": ["fmt", "--stdin", "{buffer_path}"],
+    },
+  },
+  "format_on_save": "on",
+  "hard_tabs": false,
+  "middle_click_paste": false,
+  "preferred_line_length": 100,
+  "scroll_beyond_last_line": "off",
+  "soft_wrap": "bounded",
+  "tabs": {
+    "git_status": true,
+  },
+  "tab_size": 2,
+  "telemetry": {
+    "diagnostics": false,
+    "metrics": false,
+  },
+  "use_autoclose": false,
+  "use_auto_surround": false,
+  "languages": {
+    "Rust": {
+      "tab_size": 2
+    },
+  }
+}

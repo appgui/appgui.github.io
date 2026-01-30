@@ -1,0 +1,12 @@
+[package]
+name = "feat_desktop"
+version = "0.0.1"
+edition = "2024"
+
+[[bin]]
+name = "SlintXPlatform"
+path = "src/main.rs"
+
+[dependencies]
+feat_shared = { path = "../" }
+slint = { version = "1.14.1", default-features = false, features = ["backend-winit", "renderer-skia", "compat-1-2"] }

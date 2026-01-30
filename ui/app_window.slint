@@ -1,0 +1,55 @@
+import { CustomToggleButton } from "components/custom_button.slint";
+
+export component AppWindow inherits Window {
+    title: "SlintXPlatform";
+    icon: @image-url("../assets/icon.png");
+    background: #0f172a;
+    preferred-width: 360px;
+    preferred-height: 460px;
+
+    in-out property <string> display-value: "—";
+    in-out property <string> display-label: "—";
+    in-out property <string> button-text: "Show Uptime";
+
+    callback toggle-mode();
+
+    // Debug: Show the icon in the UI to verify it loads
+    VerticalLayout {
+        padding: 32px;
+        spacing: 32px;
+        alignment: center;
+
+        // TEST: Display the icon image to see if it loads
+        Image {
+            source: @image-url("../assets/icon.png");
+            width: 64px;
+            height: 64px;
+        }
+
+        VerticalLayout {
+            spacing: 6px;
+            alignment: center;
+
+            Text {
+                text: root.display-value;
+                font-size: 56px;
+                color: #38bdf8;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: root.display-label;
+                font-size: 18px;
+                color: #94a3b8;
+                horizontal-alignment: center;
+            }
+        }
+
+        CustomToggleButton {
+            text: root.button-text;
+            clicked => {
+                root.toggle-mode();
+            }
+        }
+    }
+}

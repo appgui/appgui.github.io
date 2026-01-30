@@ -1,0 +1,24 @@
+export component CustomToggleButton inherits Rectangle {
+    in property <string> text;
+    callback clicked;
+
+    height: 76px;
+    border-radius: 12px;
+    background: touch.pressed ? #059669 : touch.has-hover ? #10b981cc : #10b981;
+
+    animate background { duration: 140ms; }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;  // Show pointer cursor on hover
+        clicked => { root.clicked(); }
+    }
+
+    Text {
+        text: root.text;
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}

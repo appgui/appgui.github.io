@@ -1,0 +1,3 @@
+- app icon
+- tray indicator
+- notification
