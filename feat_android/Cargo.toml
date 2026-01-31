@@ -14,21 +14,25 @@ android-activity = { version = "0.6", features = ["native-activity"] }
 
 [package.metadata.android]
 package = "com.mikko.slintxplatform"
-label = "SlintXPlatform"
+apk_name = "SlintXPlatform"
 build_targets = ["aarch64-linux-android"]
-icon = "assets/icon.png"
+strip = "strip"
+use_aapt2 = true
+icon = "../assets/icon.png"
 
 [package.metadata.android.sdk]
-min_sdk_version = 29
+min_sdk_version = 33
 target_sdk_version = 36
 
 # This needs to be turned on for cargo apk2.
 [package.metadata.android.application]
 # needed
 has_code = false
+debuggable = false
 
 [[package.metadata.android.application.activity]]
 name = "android.app.NativeActivity"
+label = "SlintXPlatform"
 
 [[package.metadata.android.application.activity.meta_data]]
 name = "android.app.lib_name"

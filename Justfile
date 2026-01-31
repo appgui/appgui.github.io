@@ -9,6 +9,12 @@ _list:
 
 # Variables
 app_name := "slintxplatform"
+DN_CN := env("DN_CN", 'Unknown')
+DN_OU := env("DN_OU", 'Unknown')
+DN_O := env("DN_O", 'Unknown')
+DN_L := env("DN_L", 'Unknown')
+DN_ST := env("DN_ST", 'Unknown')
+DN_C := env("DN_C", 'XX')
 
 is_amd64 := shell('if [ "$(uname -m)" == "x86_64" ]; then echo "1"; else echo "0"; fi')
 
@@ -24,6 +30,7 @@ jdk_dir := "jdk-17"
 # Official URLs
 android_sdk_cmdline_tools_url := "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
 
+# https://github.com/adoptium/temurin17-binaries/releases # at the moment Android works with JDK 17 only
 openjdk_official_url_amd64 := "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.18+8/OpenJDK17U-jdk_x64_linux_hotspot_17.0.18_8.tar.gz"
 openjdk_official_url_aarch64 := "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.18+8/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.18_8.tar.gz"
 
@@ -35,7 +42,7 @@ cmdline_tools_subdir := "cmdline-tools/latest"
 # Paths
 ANDROID_HOME := env('ANDROID_HOME', join(env('HOME'), android_sdk_dir))
 JAVA_HOME := join(env('HOME'), android_jdk_dir, jdk_dir)
-ANDROID_NDK_HOME := join(ANDROID_HOME, "ndk", ndk_version)
+ANDROID_NDK_HOME := join(ANDROID_HOME, 'ndk', ndk_version)
 
 env:
   #!/bin/sh
@@ -48,34 +55,34 @@ setup:
   command -v rustup || sudo dnf install rustup
   rustup target add {{ android_target }} || rustup-init -t {{ android_target }} -y
   cargo install cargo-ndk
-  echo "[DONE] Rust targets and cargo-ndk installed"
-  
-setup-compat:
+  echo '[DONE] Rust targets and cargo-ndk installed'
+
+setup_compat: # allow running Android SDK (x86_64) on ARM64 host
   #!/bin/sh
-  if [ "{{is_amd64}}" -eq "0" ]; then
-    sudo sh -c "\
+  if [ '{{is_amd64}}' -eq '0' ]; then
+    sudo sh -c '\
       dnf install qemu-user-static systemd-binfmt; \
       yes | dnf --installroot=/opt/x86_64-root --forcearch=x86_64 install \
         glibc zlib \
           --use-host-config; \
       \
-    "
+    '
     export QEMU_LD_PREFIX=/opt/x86_64-root
     export LD_LIBRARY_PATH=/opt/x86_64-root/lib64
-    
+
     mkdir -p .cargo 2> /dev/null
     export > .cargo/compat.env
   else
     echo '[INFO] Using native SDK binaries...'
   fi
 
-setup-android-sdk:
+setup_android_sdk:
   #!/bin/sh
   set -euo pipefail
   CMDLINE_TOOLS="${ANDROID_HOME}/{{ cmdline_tools_subdir }}"
   SDKMANAGER="${CMDLINE_TOOLS}/bin/sdkmanager"
-  
-  just setup-compat
+
+  just setup_compat
   eval $(cat .cargo/compat.env)
 
   $SDKMANAGER --version
@@ -83,10 +90,10 @@ setup-android-sdk:
   mkdir -p "${ANDROID_HOME}"
 
   if [ ! -f "${SDKMANAGER}" ]; then
-    echo "Installing Android SDK command-line tools..."
+    echo 'Installing Android SDK command-line tools...'
     mkdir -p "${CMDLINE_TOOLS}"
     cd /tmp
-    wget -q "{{ android_sdk_cmdline_tools_url }}" -O cmdline-tools.zip
+    wget -q '{{ android_sdk_cmdline_tools_url }}' -O cmdline-tools.zip
     unzip -q cmdline-tools.zip -d "${CMDLINE_TOOLS}"
     mv "${CMDLINE_TOOLS}/cmdline-tools"/* "${CMDLINE_TOOLS}/"
     rmdir "${CMDLINE_TOOLS}/cmdline-tools"
@@ -96,46 +103,103 @@ setup-android-sdk:
   export ANDROID_HOME ANDROID_SDK_ROOT="${ANDROID_HOME}"
 
   yes | "${SDKMANAGER}" --licenses || true
-  "${SDKMANAGER}" "platform-tools" "build-tools;{{ build_tools_version }}" \
-                  "platforms;{{ android_platform }}" "ndk;{{ ndk_version }}"
+  "${SDKMANAGER}" 'platform-tools' 'build-tools;{{ build_tools_version }}' \
+                  'platforms;{{ android_platform }}' 'ndk;{{ ndk_version }}'
 
-  echo "[DONE] Android SDK/NDK installed"
+  echo '[DONE] Android SDK/NDK installed'
 
-setup-android-jdk:
+setup_android_jdk:
   #!/bin/sh
   set -euo pipefail
 
   mkdir -p ~/{{ android_jdk_dir }}
   cd ~/{{ android_jdk_dir }}
 
-  if [ -d "{{ jdk_dir }}" ]; then
-    echo "[DONE] OpenJDK {{ java_version }} already installed"
+  if [ -d '{{ jdk_dir }}' ]; then
+    echo '[DONE] OpenJDK {{ java_version }} already installed'
     exit 0
   fi
 
-  echo "Downloading OpenJDK {{ java_version }}..."
-  
-  if [ "{{is_amd64}}" -eq "1" ]; then
-    java_dl_link="{{ openjdk_official_url_amd64 }}"
+  echo '[INFO] Downloading OpenJDK {{ java_version }}...'
+
+  if [ '{{is_amd64}}' -eq '1' ]; then
+    java_dl_link='{{ openjdk_official_url_amd64 }}'
   else
-    java_dl_link="{{ openjdk_official_url_aarch64 }}"
+    java_dl_link='{{ openjdk_official_url_aarch64 }}'
   fi
-  
+
   openjdk_archive_name=$(basename $java_dl_link)
   wget -q "${java_dl_link}" -O "${openjdk_archive_name}"
   tar -xzf "${openjdk_archive_name}"
-  
+
   openjdk_extracted_dir=$(ls | grep {{ jdk_dir }} | head -n1)
-  mv "${openjdk_extracted_dir}" "{{ jdk_dir }}"
+  mv "${openjdk_extracted_dir}" '{{ jdk_dir }}'
   rm "${openjdk_archive_name}"
 
-  echo "[DONE] OpenJDK {{ java_version }} installed to ~/{{ android_jdk_dir }}/{{ jdk_dir }}"
+  echo '[DONE] OpenJDK {{ java_version }} installed to ~/{{ android_jdk_dir }}/{{ jdk_dir }}'
 
-setup-android-builder:
+setup_android_builder:
   #!/bin/sh
   cargo install cargo-apk2
 
-setup-cargo-config:
+setup_android_keystore:
+  #!/bin/sh
+  echo '[INFO] Setting up Android keystore...'
+
+  if [ ! -d ./.android ]; then mkdir ./.android; fi
+  cd ./.android
+
+  set -e
+  eval $(cat ../.cargo/compat.env) || echo '[INFO] Not using compat mode'
+
+  # Load secrets if exists
+  if [ -f secrets.env ]; then
+    . ./secrets.env
+  fi
+
+  # Set defaults or generate random values
+  : "${KEY_ALIAS:=release}"
+  : "${KEY_PASSWORD:=$(openssl rand -base64 32 2>/dev/null || echo 'changeit')}"
+
+  rm ./release.keystore 2> /dev/null
+  rm ./secrets.env 2> /dev/null
+
+  echo """
+  [package.metadata.android.signing.release]
+  path = '"release.keystore"'
+  keystore_password = '"${KEY_PASSWORD}"'
+  key_alias = '"${KEY_ALIAS}"'
+  key_password = '"${KEY_PASSWORD}"'
+
+  """ > ../.cargo/keystore.toml
+
+  # Save secrets if not already saved
+  if [ ! -f ./secrets.env ]; then
+    echo """# keystore values
+  KEY_ALIAS="$KEY_ALIAS"
+  KEY_PASSWORD="$KEY_PASSWORD"
+  KEYSTORE_PASSWORD="$KEY_PASSWORD"
+  DN_CN="{{DN_CN}}"
+  DN_OU="{{DN_OU}}"
+  DN_O="{{DN_O}}"
+  DN_L="{{DN_L}}"
+  DN_ST="{{DN_ST}}"
+  DN_C="{{DN_C}}"
+    """ > ./secrets.env
+  fi
+
+  # Generate keystore
+  ${JAVA_HOME}/bin/keytool -genkey -v \
+    -keystore release.keystore \
+    -alias "$KEY_ALIAS" \
+    -keyalg RSA \
+    -keysize 2048 \
+    -validity 10000 \
+    -storepass "$KEY_PASSWORD" \
+    -keypass "$KEY_PASSWORD" \
+    -dname "CN=$DN_CN, OU=$DN_OU, O=$DN_O, L=$DN_L, ST=$DN_ST, C=$DN_C"
+
+setup_cargo_config:
   #!/bin/sh
   set -euo pipefail
 
@@ -151,11 +215,6 @@ setup-cargo-config:
   ANDROID_BUILD_TOOLS_VERSION = { value = "BUILD_TOOLS_VERSION_PLACEHOLDER", force = true }
   JAVA_HOME = { value = "JAVA_HOME_PLACEHOLDER", force = true }
 
-  [package.metadata.android.signing.release] # TODO
-  path = "release.keystore"
-  keystore_password = "android"
-  key_alias = "release"
-  key_password = "android"
   EOF
 
   sed -i "s|ANDROID_HOME_PLACEHOLDER|{{ ANDROID_HOME }}|g" .cargo/config.toml
@@ -165,31 +224,31 @@ setup-cargo-config:
   sed -i "s|BUILD_TOOLS_VERSION_PLACEHOLDER|{{ build_tools_version }}|g" .cargo/config.toml
   sed -i "s|JAVA_HOME_PLACEHOLDER|{{ JAVA_HOME }}|g" .cargo/config.toml
 
-  echo "[DONE] Created .cargo/config.toml"
+  echo '[DONE] Created .cargo/config.toml'
 
-setup-all:
+setup_all:
   #!/bin/sh
   just setup
-  just setup-android-sdk
-  just setup-android-jdk
-  just setup-cargo-config
-  just setup-android-builder
-  echo "[DONE] Complete setup finished"
+  just setup_android_sdk
+  just setup_android_jdk
+  just setup_android_builder
+  just setup_android_keystore
+  just setup_cargo_config
+  echo '[DONE] Complete setup finished'
 
 # --- DESKTOP ---
 
-run:
+run_desktop:
   #!/bin/sh
   cargo run -p feat_desktop
 
-build-desktop *ARGS: # add --release to produce optimised binary
+build_desktop *ARGS: # add --release to produce optimised binary
   #!/bin/sh
   cargo build -p feat_desktop {{ARGS}}
 
 # --- ANDROID ---
 
-# Run Android app via ADB
-run-android *ARGS:
+_exec_android ACTION *ARGS:
   #!/bin/sh
   cd ./feat_android
   set -e
@@ -197,26 +256,40 @@ run-android *ARGS:
   export PATH="${JAVA_HOME}/bin:${PATH}"
 
   if [ ! -d "${ANDROID_NDK_HOME}" ] || [ ! -d "${JAVA_HOME}" ]; then
-    echo "[INFO] Run setup first: just setup-all"
+    echo '[INFO] Run setup first: just setup_all'
     exit 1
   fi
-  echo "[INFO] Building installable Android APK (release, via cargo-apk2)..."
-  cargo apk2 run {{ARGS}}
+
+  mkdir -p ../.android
+  ln -sf ../feat_android/src ../.android/src
+  ln -sf ../target ../.android/target
+  echo """$(cat ../feat_android/Cargo.toml)
+  $(cat ../.cargo/keystore.toml)
+  """ > ../.android/Cargo.toml
+
+  case '{{ACTION}}' in
+    BUILD)
+      echo '[INFO] Building Android APK (release, via cargo-apk2)...'
+      cargo apk2 build --target {{ android_target }} --manifest-path ../.android/Cargo.toml {{ARGS}}
+      ;;
+    RUN)
+      echo '[INFO] Running Android APK (release, via cargo-apk2)...'
+      cargo apk2 run --manifest-path ../.android/Cargo.toml {{ARGS}}
+      ;;
+    *)
+      echo '[FAIL] Unknown action'
+  esac
+
+# Run Android app via ADB
+run_android *ARGS:
+  #!/bin/sh
+  just _exec_android RUN {{ARGS}}
 
 # Build Android app installer
-build-android-apk *ARGS: # add --release to produce optimised archive
+build_android *ARGS: # add --release to produce optimised archive
   #!/bin/sh
-  cd ./feat_android
-  set -e
-  eval $(cat ../.cargo/compat.env) || echo '[INFO] Not using compat mode'
-  export PATH="${JAVA_HOME}/bin:${PATH}"
+  just _exec_android BUILD {{ARGS}}
 
-  if [ ! -d "${ANDROID_NDK_HOME}" ] || [ ! -d "${JAVA_HOME}" ]; then
-    echo "[INFO] Run setup first: just setup-all"
-    exit 1
-  fi
-  echo "Building installable Android APK (release, via cargo-apk2)..."
-  cargo apk2 build --target {{ android_target }} {{ARGS}}
 
 # --- UTILS ---
 
@@ -227,10 +300,10 @@ clean:
 release:
   #!/bin/sh
   echo 'Desktop'
-  just build-desktop --release
-  ls -lh ./target/release/{{app_name}}* | grep "^-rwxrwxr-x"
+  just build_desktop --release
+  ls -lh ./target/release/{{app_name}}* | grep '^-rwxrwxr-x'
   echo
 
   echo 'Mobile'
-  just build-android-apk --release
+  just build_android --release
   ls -lh 'target/release/apk/feat_android.apk'

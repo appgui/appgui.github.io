@@ -22,7 +22,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 sysinfo = "0.38.0"
 
 [workspace]
-members = ["feat_desktop", "feat_android"]
+members = ["feat_desktop", ".android"]
 resolver = "3"
 
 [profile.release]
