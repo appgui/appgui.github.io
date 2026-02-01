@@ -1,3 +1,4 @@
+import { ScrollView } from "std-widgets.slint";
 import { CustomToggleButton } from "components/custom_button.slint";
 
 export component AppWindow inherits Window {
@@ -6,49 +7,194 @@ export component AppWindow inherits Window {
     background: #0f172a;
     preferred-width: 360px;
     preferred-height: 460px;
+    min-width: 360px;
+    min-height: 460px;
 
+    no-frame: !is-mobile;
+
+    in property <bool> is-mobile: false;
     in-out property <string> display-value: "—";
     in-out property <string> display-label: "—";
     in-out property <string> button-text: "Show Uptime";
+    in-out property <bool> is-maximized: false;
 
     callback toggle-mode();
+    callback quit();
+    callback start-drag();
+    callback minimize();
+    callback maximize();
 
-    // Debug: Show the icon in the UI to verify it loads
+    private property <bool> dragging: false;
+
     VerticalLayout {
-        padding: 32px;
-        spacing: 32px;
-        alignment: center;
+        Rectangle {
+            height: 32px;
+            vertical-stretch: 0;
+            clip: true;
 
-        // TEST: Display the icon image to see if it loads
-        Image {
-            source: @image-url("../assets/icon.png");
-            width: 64px;
-            height: 64px;
+            if !root.is-mobile : HorizontalLayout {
+                vertical-stretch: 0;
+                icon_btn := TouchArea {
+                    width: 28px;
+                    height: 32px;
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => { submenu_popup.show(); }
+                    Image {
+                        source: @image-url("../assets/icon.png");
+                        width: 16px; height: 16px; x: 6px; y: 8px;
+                    }
+                }
+
+                drag_area := TouchArea {
+                    horizontal-stretch: 1;
+                    height: 32px;
+                    mouse-cursor: root.dragging ? MouseCursor.grabbing : MouseCursor.grab;
+                    pointer-event(event) => {
+                        if (root.dragging) {
+                            // While dragging, ignore events until finished
+                            if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                                root.dragging = false;
+                            }
+                            if (event.kind == PointerEventKind.cancel) {
+                                root.dragging = false;
+                            }
+                            return;
+                        }
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            root.dragging = true;
+                            root.start-drag();
+                        }
+                    }
+                    Text {
+                        text: "SlintXPlatform";
+                        color: #94a3b8; font-size: 12px; vertical-alignment: center;
+                    }
+                }
+
+                HorizontalLayout {
+                    minimize_btn := TouchArea {
+                        width: 36px; height: 32px;
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => { root.minimize(); }
+                        Rectangle {
+                            background: minimize_btn.has-hover ? #334155 : transparent;
+                            Path {
+                                commands: "M 8 16 L 28 16";
+                                stroke: #94a3b8; stroke-width: 2px;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                        }
+                    }
+
+                    maximize_btn := TouchArea {
+                        width: 36px; height: 32px;
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => { root.maximize(); }
+                        Rectangle {
+                            background: maximize_btn.has-hover ? #334155 : transparent;
+                            if !root.is-maximized : Path {
+                                commands: "M 10 8 L 26 8 L 26 24 L 10 24 Z";
+                                stroke: #94a3b8; stroke-width: 2px; fill: transparent;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                            if root.is-maximized : Path {
+                                commands: "M 13 6 L 27 6 L 27 20 L 13 20 Z M 9 10 L 23 10 L 23 24 L 9 24 Z";
+                                stroke: #94a3b8; stroke-width: 2px; fill: transparent;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                        }
+                    }
+
+                    close_btn := TouchArea {
+                        width: 36px; height: 32px;
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => { root.quit(); }
+                        Rectangle {
+                            background: close_btn.has-hover ? #dc2626 : transparent;
+                            Path {
+                                commands: "M 10 10 L 26 22 M 26 10 L 10 22";
+                                stroke: #94a3b8; stroke-width: 2px;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        VerticalLayout {
-            spacing: 6px;
-            alignment: center;
-
-            Text {
-                text: root.display-value;
-                font-size: 56px;
-                color: #38bdf8;
-                horizontal-alignment: center;
-            }
-
-            Text {
-                text: root.display-label;
-                font-size: 18px;
-                color: #94a3b8;
-                horizontal-alignment: center;
+        if root.is-mobile : HorizontalLayout {
+            height: 24px; padding-left: 8px; padding-top: 2px;
+            TouchArea {
+                width: 20px; height: 20px;
+                mouse-cursor: MouseCursor.pointer;
+                clicked => { submenu_popup.show(); }
+                Image { source: @image-url("../assets/icon.png"); width: 14px; height: 14px; }
             }
         }
 
-        CustomToggleButton {
-            text: root.button-text;
-            clicked => {
-                root.toggle-mode();
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                padding: 32px; spacing: 32px; alignment: center;
+                VerticalLayout {
+                    spacing: 6px; alignment: center;
+                    Text { text: root.display-value; font-size: 56px; color: #38bdf8; horizontal-alignment: center; }
+                    Text { text: root.display-label; font-size: 18px; color: #94a3b8; horizontal-alignment: center; }
+                }
+                CustomToggleButton {
+                    text: root.button-text;
+                    clicked => { root.toggle-mode(); }
+                }
+            }
+        }
+    }
+
+    submenu_popup := PopupWindow {
+        x: 8px; y: 56px; width: 150px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: #1e293b; border-radius: 6px;
+            VerticalLayout {
+                padding: 4px;
+                about_touch := TouchArea {
+                    height: 28px;
+                    clicked => { submenu_popup.close(); about_popup.show(); }
+                    Rectangle {
+                        background: about_touch.has-hover ? #334155 : transparent;
+                        border-radius: 4px;
+                        Text { text: "About"; color: #e2e8f0; font-size: 13px; x: 12px; vertical-alignment: center; }
+                    }
+                }
+                exit_touch := TouchArea {
+                    height: 28px;
+                    clicked => { submenu_popup.close(); root.quit(); }
+                    Rectangle {
+                        background: exit_touch.has-hover ? #334155 : transparent;
+                        border-radius: 4px;
+                        Text { text: "Exit"; color: #e2e8f0; font-size: 13px; x: 12px; vertical-alignment: center; }
+                    }
+                }
+            }
+        }
+    }
+
+    about_popup := PopupWindow {
+        x: (root.width - 220px) / 2; y: (root.height - 120px) / 2; width: 220px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: #1e293b; border-radius: 8px;
+            VerticalLayout {
+                padding: 24px; spacing: 12px; alignment: center;
+                Image { source: @image-url("../assets/icon.png"); width: 48px; height: 48px; }
+                Text { text: "SlintXPlatform"; color: #f1f5f9; font-size: 16px; font-weight: 700; horizontal-alignment: center; }
+                Text { text: "v0.0.1"; color: #94a3b8; font-size: 13px; horizontal-alignment: center; }
+                TouchArea {
+                    height: 30px; clicked => { about_popup.close(); }
+                    Rectangle {
+                        background: #334155; border-radius: 6px;
+                        Text { text: "OK"; color: #e2e8f0; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                }
             }
         }
     }

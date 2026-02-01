@@ -1,3 +1,4 @@
-- app icon
+- optimise dragging and resizing logics
+- add https://crates.io/crates/winresource to set binary file icon on Windows
 - tray indicator
 - notification

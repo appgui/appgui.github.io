@@ -9,4 +9,11 @@ path = "src/main.rs"
 
 [dependencies]
 feat_shared = { path = "../" }
-slint = { version = "1.14.1", default-features = false, features = ["backend-winit", "renderer-skia", "compat-1-2"] }
+slint = { version = "1.14.1", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
+winit = "0.30"
+i-slint-backend-winit = "=1.14.1"
+
+[package.metadata.bundle]
+name = "SlintXPlatform"
+identifier = "com.mikko.slintxplatform"
+icon = ["assets/icon.png"] # relative to workspace root

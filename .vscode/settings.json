@@ -1,0 +1,44 @@
+{
+	"settings": {
+		"telemetry.feedback.enabled": false,
+		"telemetry.editStats.enabled": false,
+		"editor.formatOnSave": true,
+		"editor.wordWrap": "bounded",
+		"editor.formatOnPaste": true,
+		"editor.autoIndentOnPaste": true,
+		"editor.trimWhitespaceOnDelete": true,
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true,
+		"files.trimTrailingWhitespace": true,
+		"terminal.integrated.defaultProfile.windows": "Git Bash",
+		"terminal.integrated.profiles.windows": {
+			"Git Bash": {
+				"path": [
+					"C:\\Program Files\\Git\\bin\\bash.exe",
+				],
+				"icon": "terminal-bash"
+			}
+		}
+	},
+	"terminal.integrated.defaultProfile.windows": "Git Bash",
+	"terminal.integrated.rightClickBehavior": "default",
+	"editor.tabSize": 2,
+	"editor.formatOnSave": true,
+	"files.autoSave": "onFocusChange",
+	"editor.defaultFormatter": "dprint.dprint",
+	"editor.wordWrap": "bounded",
+	"editor.mouseWheelZoom": true,
+	"editor.formatOnPaste": true,
+	"editor.accessibilitySupport": "off",
+	"editor.autoClosingBrackets": "never",
+	"editor.autoClosingComments": "never",
+	"editor.autoClosingDelete": "never",
+	"editor.autoClosingOvertype": "never",
+	"editor.autoClosingQuotes": "never",
+	"editor.autoIndentOnPaste": true,
+	"editor.autoSurround": "never",
+	"editor.minimap.enabled": false,
+	"telemetry.editStats.enabled": false,
+	"telemetry.feedback.enabled": false,
+	"editor.scrollBeyondLastLine": false,
+}
