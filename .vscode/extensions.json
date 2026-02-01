@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "rust-lang.rust-analyzer",
+        "nefrob.vscode-just-syntax",
+        "dprint.dprint",
+        "slint.slint"
+    ]
+}

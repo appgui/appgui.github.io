@@ -1,3 +1,9 @@
-.android
 .cargo
+
+_android
+!_android/.keep
+
 target
+
+# MacOS
+.DS_Store

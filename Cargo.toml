@@ -3,9 +3,9 @@ name = "feat_shared"
 version = "0.0.1"
 authors = ["Mikhail Timofeev <mikko.timofeev@gmail.com>"]
 edition = "2024"
-rust-version = "1.90"
 publish = false
 build = "build.rs"
+license-file = "./LICENSE-MIT"
 
 [lib]
 path = "src/lib.rs"
@@ -16,13 +16,13 @@ slint-build = "1.14.1"
 
 [dependencies]
 # Need the compiler feature to generate AppWindow from .slint files
-slint = { version = "1.14.1", default-features = false, features = ["compat-1-2"] }
+slint = { version = "1.14.1", features = ["compat-1-2"] }
 # For loading the icon from embedded bytes
 image = { version = "0.25", default-features = false, features = ["png"] }
 sysinfo = "0.38.0"
 
 [workspace]
-members = ["feat_desktop", ".android"]
+members = ["./feat_desktop", "./feat_android", "./_android"]
 resolver = "3"
 
 [profile.release]
