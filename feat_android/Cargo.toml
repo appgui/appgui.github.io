@@ -2,7 +2,6 @@
 name = "feat_android"
 version = "0.0.1"
 edition = "2024"
-workspace = '../'
 
 # https://snapshots.slint.dev/master/docs/rust/slint/android/
 
@@ -23,7 +22,7 @@ strip = "strip"
 use_aapt2 = true
 
 # Use res directory for icon resources
-resources = "./res"
+resources = "../assets"
 
 [package.metadata.android.sdk]
 min_sdk_version = 33

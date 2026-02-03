@@ -1,0 +1,8 @@
+# Common format: line endings to LF, insert final newline, no trailing spaces.
+* text=auto
+* text eol=lf insert_final_newline=true
+* whitespace=trailing-space
+
+# Ignore local changes to Cargo.toml in _android directory
+# _android/Cargo.toml filter=ignore-local
+assets/icon.png

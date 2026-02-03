@@ -1,7 +1,13 @@
 .cargo
 
+.tools/*
+!.tools/.keep
+
 _android
-!_android/.keep
+!_android/Cargo.toml
+
+assets/*
+!assets/icon.svg
 
 target
 

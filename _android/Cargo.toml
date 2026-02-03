@@ -1,0 +1,52 @@
+[package]
+name = "_android"
+version = "0.0.1"
+edition = "2024"
+
+# https://snapshots.slint.dev/master/docs/rust/slint/android/
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+feat_shared = { path = "../" }
+slint = { version = "1.14.1", default-features = false, features = ["backend-android-activity-06", "renderer-femtovg", "compat-1-2"] }
+android-activity = { version = "0.6", features = ["native-activity"] }
+
+[package.metadata.android]
+package = "com.mikko.slintxplatform"
+apk_name = "SlintXPlatform"
+build_targets = ["aarch64-linux-android"]
+strip = "strip"
+use_aapt2 = true
+
+# Use res directory for icon resources
+resources = "./res"
+
+[package.metadata.android.sdk]
+min_sdk_version = 33
+target_sdk_version = 36
+
+[package.metadata.android.application]
+has_code = false
+debuggable = false
+label = "SlintXPlatform"
+icon = "@mipmap/ic_launcher"
+
+[[package.metadata.android.application.activity]]
+name = "android.app.NativeActivity"
+label = "SlintXPlatform"
+
+[[package.metadata.android.application.activity.meta_data]]
+name = "android.app.lib_name"
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.VIEW", "android.intent.action.MAIN"]
+categories = ["android.intent.category.LAUNCHER"]
+
+[package.metadata.android.signing.release]
+path = 'release.keystore'
+keystore_password = 'FT4UVjJyollUqG7zvMF0lDLTxEp4O2dxPQcrnnhBx44='
+key_alias = 'release'
+key_password = 'FT4UVjJyollUqG7zvMF0lDLTxEp4O2dxPQcrnnhBx44='

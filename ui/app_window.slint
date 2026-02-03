@@ -17,23 +17,34 @@ export component AppWindow inherits Window {
     in-out property <string> display-label: "—";
     in-out property <string> button-text: "Show Uptime";
     in-out property <bool> is-maximized: false;
+    in-out property <bool> is-fullscreen: false;
+    in-out property <bool> expecting-second-click: false;
 
     callback toggle-mode();
     callback quit();
     callback start-drag();
     callback minimize();
     callback maximize();
+    callback toggle-fullscreen();
+    callback start-resize-drag(direction: string);
 
-    private property <bool> dragging: false;
-
+    // ─── Main layout ────────────────────────────────────────────────────────
+    // DIRECT child of Window – no wrapper Rectangle.
+    // On Wayland, drag_window() carries the serial of the most recent pointer
+    // event.  Any intermediate Rectangle that re-layouts before the TouchArea
+    // fires causes that serial to go stale and the compositor silently rejects
+    // the move.  Same applies to drag_resize_window().
     VerticalLayout {
-        Rectangle {
+        // Desktop titlebar – hidden when mobile or fullscreen
+        if !root.is-mobile && !root.is-fullscreen : Rectangle {
             height: 32px;
             vertical-stretch: 0;
             clip: true;
 
-            if !root.is-mobile : HorizontalLayout {
+            HorizontalLayout {
                 vertical-stretch: 0;
+
+                // App-icon / menu button
                 icon_btn := TouchArea {
                     width: 28px;
                     height: 32px;
@@ -45,33 +56,56 @@ export component AppWindow inherits Window {
                     }
                 }
 
-                drag_area := TouchArea {
+                // Draggable title area with double-click to maximize
+                title_drag_area := TouchArea {
                     horizontal-stretch: 1;
                     height: 32px;
-                    mouse-cursor: root.dragging ? MouseCursor.grabbing : MouseCursor.grab;
+                    mouse-cursor: MouseCursor.grab;
+
                     pointer-event(event) => {
-                        if (root.dragging) {
-                            // While dragging, ignore events until finished
-                            if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
-                                root.dragging = false;
-                            }
-                            if (event.kind == PointerEventKind.cancel) {
-                                root.dragging = false;
-                            }
-                            return;
-                        }
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                            root.dragging = true;
-                            root.start-drag();
+                            if (root.expecting-second-click) {
+                                // Double-click: toggle maximize
+                                root.maximize();
+                                root.expecting-second-click = false;
+                            } else {
+                                // Single-click: start drag and expect second click
+                                root.start-drag();
+                                root.expecting-second-click = true;
+                            }
+                        } else if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                            // Reset state after release
+                            root.expecting-second-click = false;
                         }
                     }
+
                     Text {
                         text: "SlintXPlatform";
                         color: #94a3b8; font-size: 12px; vertical-alignment: center;
                     }
                 }
 
+                // Window-control buttons
                 HorizontalLayout {
+                    fullscreen_btn := TouchArea {
+                        width: 36px; height: 32px;
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => { root.toggle-fullscreen(); }
+                        Rectangle {
+                            background: fullscreen_btn.has-hover ? #334155 : transparent;
+                            if !root.is-fullscreen : Path {
+                                commands: "M 10 14 L 10 10 L 14 10 M 22 10 L 26 10 L 26 14 M 26 22 L 26 26 L 22 26 M 14 26 L 10 26 L 10 22";
+                                stroke: #94a3b8; stroke-width: 2px;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                            if root.is-fullscreen : Path {
+                                commands: "M 14 10 L 14 14 L 10 14 M 26 14 L 22 14 L 22 10 M 22 26 L 22 22 L 26 22 M 10 22 L 14 22 L 14 26";
+                                stroke: #94a3b8; stroke-width: 2px;
+                                viewbox-width: 36; viewbox-height: 32;
+                            }
+                        }
+                    }
+
                     minimize_btn := TouchArea {
                         width: 36px; height: 32px;
                         mouse-cursor: MouseCursor.pointer;
@@ -122,16 +156,47 @@ export component AppWindow inherits Window {
             }
         }
 
-        if root.is-mobile : HorizontalLayout {
-            height: 24px; padding-left: 8px; padding-top: 2px;
+        // Secondary toolbar – visible on mobile OR when fullscreen
+        if root.is-mobile || root.is-fullscreen : HorizontalLayout {
+            height: 24px;
+            padding-left: 8px;
+            padding-right: 8px;
+            padding-top: 2px;
+
             TouchArea {
                 width: 20px; height: 20px;
                 mouse-cursor: MouseCursor.pointer;
                 clicked => { submenu_popup.show(); }
-                Image { source: @image-url("../assets/icon.png"); width: 14px; height: 14px; }
+                Image {
+                    source: @image-url("../assets/icon.png");
+                    width: 14px; height: 14px;
+                }
+            }
+
+            Rectangle { horizontal-stretch: 1; }
+
+            fullscreen_mobile_btn := TouchArea {
+                width: 20px; height: 20px;
+                mouse-cursor: MouseCursor.pointer;
+                clicked => { root.toggle-fullscreen(); }
+                Rectangle {
+                    background: fullscreen_mobile_btn.has-hover ? #334155 : transparent;
+                    border-radius: 2px;
+                    if !root.is-fullscreen : Path {
+                        commands: "M 3 5 L 3 3 L 5 3 M 11 3 L 13 3 L 13 5 M 13 11 L 13 13 L 11 13 M 5 13 L 3 13 L 3 11";
+                        stroke: #94a3b8; stroke-width: 1.5px;
+                        viewbox-width: 16; viewbox-height: 16;
+                    }
+                    if root.is-fullscreen : Path {
+                        commands: "M 5 3 L 5 5 L 3 5 M 13 5 L 11 5 L 11 3 M 11 13 L 11 11 L 13 11 M 3 11 L 5 11 L 5 13";
+                        stroke: #94a3b8; stroke-width: 1.5px;
+                        viewbox-width: 16; viewbox-height: 16;
+                    }
+                }
             }
         }
 
+        // Main content
         ScrollView {
             vertical-stretch: 1;
             VerticalLayout {
@@ -148,6 +213,119 @@ export component AppWindow inherits Window {
             }
         }
     }
+
+    // ─── Resize handles ─────────────────────────────────────────────────────
+    // DIRECT children of Window (not inside any Rectangle).  Positioned with
+    // root.width / root.height.  Same serial-freshness requirement as drag.
+    // Fire the callback on pointer-down; the compositor owns the resize after
+    // that.  No resizing flag or guard logic needed.
+
+    // Top
+    Rectangle {
+        background: transparent;
+        height: 4px; width: root.width; x: 0px; y: 0px;
+        TouchArea {
+            mouse-cursor: MouseCursor.n_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("n");
+                }
+            }
+        }
+    }
+    // Bottom
+    Rectangle {
+        background: transparent;
+        height: 4px; width: root.width; x: 0px; y: root.height - 4px;
+        TouchArea {
+            mouse-cursor: MouseCursor.s_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("s");
+                }
+            }
+        }
+    }
+    // Left
+    Rectangle {
+        background: transparent;
+        width: 4px; height: root.height; x: 0px; y: 0px;
+        TouchArea {
+            mouse-cursor: MouseCursor.w_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("w");
+                }
+            }
+        }
+    }
+    // Right
+    Rectangle {
+        background: transparent;
+        width: 4px; height: root.height; x: root.width - 4px; y: 0px;
+        TouchArea {
+            mouse-cursor: MouseCursor.e_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("e");
+                }
+            }
+        }
+    }
+    // NW corner
+    Rectangle {
+        background: transparent;
+        width: 8px; height: 8px; x: 0px; y: 0px;
+        TouchArea {
+            mouse-cursor: MouseCursor.nw_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("nw");
+                }
+            }
+        }
+    }
+    // NE corner
+    Rectangle {
+        background: transparent;
+        width: 8px; height: 8px; x: root.width - 8px; y: 0px;
+        TouchArea {
+            mouse-cursor: MouseCursor.ne_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("ne");
+                }
+            }
+        }
+    }
+    // SW corner
+    Rectangle {
+        background: transparent;
+        width: 8px; height: 8px; x: 0px; y: root.height - 8px;
+        TouchArea {
+            mouse-cursor: MouseCursor.sw_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("sw");
+                }
+            }
+        }
+    }
+    // SE corner
+    Rectangle {
+        background: transparent;
+        width: 8px; height: 8px; x: root.width - 8px; y: root.height - 8px;
+        TouchArea {
+            mouse-cursor: MouseCursor.se_resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    root.start-resize-drag("se");
+                }
+            }
+        }
+    }
+
+    // ─── Popups ─────────────────────────────────────────────────────────────
 
     submenu_popup := PopupWindow {
         x: 8px; y: 56px; width: 150px;
