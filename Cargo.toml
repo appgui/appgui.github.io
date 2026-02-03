@@ -14,6 +14,10 @@ crate-type = ["rlib"]
 [build-dependencies]
 slint-build = "1.14.1"
 
+# Default winit for Windows targets
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1"
+
 [dependencies]
 # Need the compiler feature to generate AppWindow from .slint files
 slint = { version = "1.14.1", features = ["compat-1-2"] }
@@ -22,7 +26,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 sysinfo = "0.38.0"
 
 [workspace]
-members = ["./feat_desktop", "./feat_android", "./_android"]
+members = ["feat_desktop", "feat_android", "_android"]
 resolver = "3"
 
 [profile.release]

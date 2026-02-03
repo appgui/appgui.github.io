@@ -222,40 +222,39 @@ setup_android_icons:
   #!/bin/sh
   set -e
 
+  cd ./assets
   echo '[INFO] Generating Android icon resources...'
 
   # Check if source icon exists
-  if [ ! -f assets/icon.png ]; then
-    echo '[ERROR] assets/icon.png not found!'
-    exit 1
+  if [ ! -f ./icon.png ]; then
+    just prepare_icons
   fi
 
-  # Create res directory structure in _android
-  mkdir -p _android/res/mipmap
-  mkdir -p _android/res/mipmap-mdpi
-  mkdir -p _android/res/mipmap-hdpi
-  mkdir -p _android/res/mipmap-xhdpi
-  mkdir -p _android/res/mipmap-xxhdpi
-  mkdir -p _android/res/mipmap-xxxhdpi
+  mkdir -p ./mipmap
+  mkdir -p ./mipmap-mdpi
+  mkdir -p ./mipmap-hdpi
+  mkdir -p ./mipmap-xhdpi
+  mkdir -p ./mipmap-xxhdpi
+  mkdir -p ./mipmap-xxxhdpi
 
   # Check for image conversion tool
   if command -v convert >/dev/null 2>&1; then
     # Use ImageMagick
     echo '[INFO] Using ImageMagick to generate icons...'
-    cp assets/icon.png _android/res/mipmap/ic_launcher.png
-    convert assets/icon.png -resize 48x48 _android/res/mipmap-mdpi/ic_launcher.png
-    convert assets/icon.png -resize 72x72 _android/res/mipmap-hdpi/ic_launcher.png
-    convert assets/icon.png -resize 96x96 _android/res/mipmap-xhdpi/ic_launcher.png
-    convert assets/icon.png -resize 144x144 _android/res/mipmap-xxhdpi/ic_launcher.png
-    convert assets/icon.png -resize 192x192 _android/res/mipmap-xxxhdpi/ic_launcher.png
+    cp assets/icon.png ./mipmap/ic_launcher.png
+    convert assets/icon.png -resize 48x48 ./mipmap-mdpi/ic_launcher.png
+    convert assets/icon.png -resize 72x72 ./mipmap-hdpi/ic_launcher.png
+    convert assets/icon.png -resize 96x96 ./mipmap-xhdpi/ic_launcher.png
+    convert assets/icon.png -resize 144x144 ./mipmap-xxhdpi/ic_launcher.png
+    convert assets/icon.png -resize 192x192 ./mipmap-xxxhdpi/ic_launcher.png
   elif command -v ffmpeg >/dev/null 2>&1; then
     # Use ffmpeg as fallback
     echo '[INFO] Using ffmpeg to generate icons...'
-    ffmpeg -i assets/icon.png -vf scale=48:48 _android/res/mipmap-mdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=72:72 _android/res/mipmap-hdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=96:96 _android/res/mipmap-xhdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=144:144 _android/res/mipmap-xxhdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=192:192 _android/res/mipmap-xxxhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i assets/icon.png -vf scale=48:48 ./mipmap-mdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i assets/icon.png -vf scale=72:72 ./mipmap-hdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i assets/icon.png -vf scale=96:96 ./mipmap-xhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i assets/icon.png -vf scale=144:144 ./mipmap-xxhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i assets/icon.png -vf scale=192:192 ./mipmap-xxxhdpi/ic_launcher.png -y -loglevel error
   else
     echo '[ERROR] Neither ImageMagick (convert) nor ffmpeg found!'
     echo 'Install one of them:'
@@ -266,7 +265,7 @@ setup_android_icons:
   fi
 
   echo '[DONE] Android icons generated:'
-  ls -lh _android/res/mipmap-*/ic_launcher.png
+  ls -lh ./mipmap-*/ic_launcher.png
 
 setup_android:
   #!/bin/sh
@@ -299,7 +298,7 @@ _exec_android ACTION *ARGS:
   fi
 
   # Generate icons if they don't exist
-  if [ ! -f ../_android/res/mipmap-mdpi/ic_launcher.png ]; then
+  if [ ! -f ../assets/mipmap-mdpi/ic_launcher.png ]; then
     echo '[INFO] Android icons not found, generating...'
     cd ..
     just setup_android_icons

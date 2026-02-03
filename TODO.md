@@ -1,4 +1,3 @@
-- optimise dragging and resizing logics
-- add https://crates.io/crates/winresource to set binary file icon on Windows
+- fix dragging on COSMIC desktop
 - tray indicator
 - notification
