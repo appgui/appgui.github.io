@@ -2,104 +2,44 @@
 
 use feat_shared::AppWindow;
 use slint::ComponentHandle;
-use i_slint_backend_winit::WinitWindowAccessor;
-use winit::window::{Window, ResizeDirection, Fullscreen};
 
 fn main() -> Result<(), slint::PlatformError> {
-    let ui = AppWindow::new()?;
+  let ui = AppWindow::new()?;
+  ui.set_is_mobile(false);
 
-    ui.set_is_mobile(false);
+  let ui_weak = ui.as_weak();
 
-    let ui_weak = ui.as_weak();
+  // ── Fullscreen ──────────────────────────────────────────────────────────
+  ui.on_toggle_fullscreen({
+    let ui_weak = ui_weak.clone();
+    move || {
+      println!("🔵 toggle_fullscreen callback triggered!");
 
-    // ── Drag ────────────────────────────────────────────────────────────────
-    ui.on_start_drag({
-        let ui_weak = ui_weak.clone();
-        move || {
-            let ui = ui_weak.unwrap();
-            ui.window().with_winit_window(|win: &Window| {
-                let _ = win.drag_window();
-            });
-        }
-    });
+      if let Some(ui) = ui_weak.upgrade() {
+        let current_state = ui.get_is_fullscreen();
+        println!("🟡 Current fullscreen state: {}", current_state);
 
-    // ── Resize ──────────────────────────────────────────────────────────────
-    ui.on_start_resize_drag({
-        let ui_weak = ui_weak.clone();
-        move |direction| {
-            let ui = ui_weak.unwrap();
-            ui.window().with_winit_window(|win: &Window| {
-                let dir = match direction.as_str() {
-                    "n"  => ResizeDirection::North,
-                    "s"  => ResizeDirection::South,
-                    "w"  => ResizeDirection::West,
-                    "e"  => ResizeDirection::East,
-                    "nw" => ResizeDirection::NorthWest,
-                    "ne" => ResizeDirection::NorthEast,
-                    "sw" => ResizeDirection::SouthWest,
-                    "se" => ResizeDirection::SouthEast,
-                    _    => ResizeDirection::SouthEast,
-                };
-                let _ = win.drag_resize_window(dir);
-            });
-        }
-    });
+        let window = ui.window();
+        let new_state = !current_state;
 
-    // ── Minimize ────────────────────────────────────────────────────────────
-    ui.on_minimize({
-        let ui_weak = ui_weak.clone();
-        move || {
-            let ui = ui_weak.unwrap();
-            ui.window().with_winit_window(|win: &Window| {
-                win.set_minimized(true);
-            });
-        }
-    });
+        println!("🔷 Setting fullscreen to: {}", new_state);
+        window.set_fullscreen(new_state);
 
-    // ── Maximize / Restore ──────────────────────────────────────────────────
-    // On Wayland, set_maximized() is an async request to the compositor.
-    // Reading win.is_maximized() immediately after setting it returns the OLD
-    // value – the toggle flips back and the window never actually changes size.
-    //
-    // Fix: the Slint property is the source of truth.  Toggle it first, then
-    // send the request to winit unconditionally based on the new value.  Never
-    // read state back from winit.
-    ui.on_maximize({
-        let ui_weak = ui_weak.clone();
-        move || {
-            let ui = ui_weak.unwrap();
-            let new_state = !ui.get_is_maximized();
-            ui.set_is_maximized(new_state);
-            ui.window().with_winit_window(|win: &Window| {
-                win.set_maximized(new_state);
-            });
-        }
-    });
+        println!("🔷 Updating UI state");
+        ui.set_is_fullscreen(new_state);
 
-    // ── Fullscreen toggle ───────────────────────────────────────────────────
-    // Same async-read-back race as maximize.  Toggle property first, request
-    // unconditionally.
-    ui.on_toggle_fullscreen({
-        let ui_weak = ui_weak.clone();
-        move || {
-            let ui = ui_weak.unwrap();
-            let new_state = !ui.get_is_fullscreen();
-            ui.set_is_fullscreen(new_state);
-            ui.window().with_winit_window(|win: &Window| {
-                if new_state {
-                    win.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                } else {
-                    win.set_fullscreen(None);
-                }
-            });
-        }
-    });
+        println!("✅ Fullscreen toggle complete");
+      }
+    }
+  });
 
-    // ── Quit ────────────────────────────────────────────────────────────────
-    ui.on_quit(|| {
-        std::process::exit(0);
-    });
+  // ── Quit ────────────────────────────────────────────────────────────────
+  ui.on_quit(|| {
+    println!("👋 Quit callback triggered");
+    std::process::exit(0);
+  });
 
-    feat_shared::run_app(ui);
-    Ok(())
+  println!("🚀 Starting app...");
+  feat_shared::run_app(ui);
+  Ok(())
 }

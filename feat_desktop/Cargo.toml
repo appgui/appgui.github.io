@@ -4,36 +4,16 @@ version = "0.0.1"
 edition = "2024"
 
 [[bin]]
-name = "SlintXPlatform"
+name = "xPlatform"
 path = "src/main.rs"
 
 [dependencies]
 feat_shared = { path = "../" }
-slint = { version = "1.14.1", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
-i-slint-backend-winit = "=1.14.1"
-
-# Default winit for non-Linux targets
-[target.'cfg(not(target_os = "linux"))'.dependencies]
-winit = "0.30"
-
-# Linux-specific winit config
-[target.'cfg(target_os = "linux")'.dependencies.winit]
-version = "0.30"
-default-features = false
-features = [
-  #"x11",        # keep if you want X11/XWayland fallback
-  "wayland",    # Wayland backend
-  # optionally comment out any wayland-csd-* features you *don’t* want:
-  # "wayland-csd-adwaita",
-  # "wayland-csd-adwaita-notitle",
-]
-
-[package.metadata.appimage]
-assets = ["../assets"]
-icon = "assets/icon.png"
-desktop_entry = "other/SlintXPlatform.desktop"
+slint = { version = "1.15", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
+i-slint-backend-winit = "1.15"
+winit = { version = "0.30", features = ["wayland", "x11"] }
 
 [package.metadata.bundle]
-name = "SlintXPlatform"
-identifier = "com.mikko.slintxplatform"
+name = "xPlatform"
+identifier = "com.mikko.xplatform"
 icon = ["assets/icon.png"] # relative to workspace root

@@ -3,25 +3,22 @@ name = "feat_android"
 version = "0.0.1"
 edition = "2024"
 
-# https://snapshots.slint.dev/master/docs/rust/slint/android/
-
 [lib]
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
 feat_shared = { path = "../" }
-slint = { version = "1.14.1", default-features = false, features = ["backend-android-activity-06", "renderer-femtovg", "compat-1-2"] }
+slint = { version = "1.15", default-features = false, features = ["backend-android-activity-06", "renderer-femtovg", "compat-1-2"] }
 android-activity = { version = "0.6", features = ["native-activity"] }
+jni = "0.21"
 
 [package.metadata.android]
-package = "com.mikko.slintxplatform"
-apk_name = "SlintXPlatform"
+package = "com.mikko.xplatform"
+apk_name = "xPlatform"
 build_targets = ["aarch64-linux-android"]
 strip = "strip"
 use_aapt2 = true
-
-# Use res directory for icon resources
 resources = "../assets"
 
 [package.metadata.android.sdk]
@@ -31,12 +28,13 @@ target_sdk_version = 36
 [package.metadata.android.application]
 has_code = false
 debuggable = false
-label = "SlintXPlatform"
+label = "xPlatform"
 icon = "@mipmap/ic_launcher"
 
 [[package.metadata.android.application.activity]]
 name = "android.app.NativeActivity"
-label = "SlintXPlatform"
+label = "xPlatform"
+launch_mode = "singleTask"
 
 [[package.metadata.android.application.activity.meta_data]]
 name = "android.app.lib_name"
