@@ -238,25 +238,25 @@ setup_android_icons:
   mkdir -p ./mipmap-xxxhdpi
 
   # Check for image conversion tool
-  if command -v convert >/dev/null 2>&1; then
+  if command -v magick >/dev/null 2>&1; then
     # Use ImageMagick
     echo '[INFO] Using ImageMagick to generate icons...'
-    cp assets/icon.png ./mipmap/ic_launcher.png
-    convert assets/icon.png -resize 48x48 ./mipmap-mdpi/ic_launcher.png
-    convert assets/icon.png -resize 72x72 ./mipmap-hdpi/ic_launcher.png
-    convert assets/icon.png -resize 96x96 ./mipmap-xhdpi/ic_launcher.png
-    convert assets/icon.png -resize 144x144 ./mipmap-xxhdpi/ic_launcher.png
-    convert assets/icon.png -resize 192x192 ./mipmap-xxxhdpi/ic_launcher.png
+    cp ./icon.png ./mipmap/ic_launcher.png
+    magick ./icon.png -resize 48x48 ./mipmap-mdpi/ic_launcher.png
+    magick ./icon.png -resize 72x72 ./mipmap-hdpi/ic_launcher.png
+    magick ./icon.png -resize 96x96 ./mipmap-xhdpi/ic_launcher.png
+    magick ./icon.png -resize 144x144 ./mipmap-xxhdpi/ic_launcher.png
+    magick ./icon.png -resize 192x192 ./mipmap-xxxhdpi/ic_launcher.png
   elif command -v ffmpeg >/dev/null 2>&1; then
     # Use ffmpeg as fallback
     echo '[INFO] Using ffmpeg to generate icons...'
-    ffmpeg -i assets/icon.png -vf scale=48:48 ./mipmap-mdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=72:72 ./mipmap-hdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=96:96 ./mipmap-xhdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=144:144 ./mipmap-xxhdpi/ic_launcher.png -y -loglevel error
-    ffmpeg -i assets/icon.png -vf scale=192:192 ./mipmap-xxxhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i ./icon.png -vf scale=48:48 ./mipmap-mdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i ./icon.png -vf scale=72:72 ./mipmap-hdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i ./icon.png -vf scale=96:96 ./mipmap-xhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i ./icon.png -vf scale=144:144 ./mipmap-xxhdpi/ic_launcher.png -y -loglevel error
+    ffmpeg -i ./icon.png -vf scale=192:192 ./mipmap-xxxhdpi/ic_launcher.png -y -loglevel error
   else
-    echo '[ERROR] Neither ImageMagick (convert) nor ffmpeg found!'
+    echo '[ERROR] Neither ImageMagick (magick) nor ffmpeg found!'
     echo 'Install one of them:'
     echo '  Fedora/RHEL: sudo dnf install ImageMagick'
     echo '  Ubuntu/Debian: sudo apt install imagemagick'
@@ -340,6 +340,7 @@ _exec_android ACTION *ARGS:
     *)
       echo '[FAIL] Unknown action'
   esac
+  git update-index --skip-worktree ../_android/Cargo.toml
 
 # Run Android app via ADB
 run_android *ARGS:

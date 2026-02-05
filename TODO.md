@@ -1,3 +1,4 @@
+- optimise titlebar's "double-click to maximise" handling
 - fix dragging on COSMIC desktop
 - tray indicator
 - notification

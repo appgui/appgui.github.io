@@ -3,7 +3,7 @@
 .tools/*
 !.tools/.keep
 
-_android
+_android/*
 !_android/Cargo.toml
 
 assets/*

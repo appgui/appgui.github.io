@@ -1,5 +1,5 @@
 #!/usr/bin/env -S just --justfile
-# SlintXPlatform - Project Command Runner
+# xPlatform - Project Command Runner
 
 set dotenv-load
 set export
@@ -10,10 +10,9 @@ _is_linux := if os() == "linux" { "1" } else { "0" }
 _is_macos := if os() == "macos" { "1" } else { "0" }
 _is_windows := if os() == "windows" { "1" } else { "0" }
 
-app_name := "slintxplatform"
+app_name := "xplatform"
 
 # context
-import? "Justpart.linux.just"
 import "Justpart.android.just"
 
 _list:
@@ -26,10 +25,12 @@ env:
 prepare_icons:
   #!/bin/sh
   cd ./assets
-  magick -background transparent -density 384 ./icon.svg \
+  magick -background transparent -density 1200 ./icon.svg \
     -define icon:auto-resize="256,128,96,64,48,32,16" \
       ./icon.ico
-  magick ./icon.svg -resize 512x512 ./icon.png
+  magick -background transparent -density 1200 ./icon.svg \
+    -resize 512x512 \
+      ./icon.png
 
 # --- SETUP ---
 
@@ -51,7 +52,7 @@ setup_host_deps:
 
 setup_host_tools:
   #!/bin/sh
-  cargo install cargo-appimage cargo-apk2 cargo-bundle
+  cargo install cargo-apk2 cargo-bundle
 
 # --- DESKTOP ---
 
@@ -74,12 +75,8 @@ build_desktop *ARGS: # add --release to produce optimised binary
     echo '[INFO] Attempting to build app bundle...'
     # https://github.com/burtonageo/cargo-bundle
     cargo bundle -p feat_desktop {{ARGS}} && echo '[DONE]' && exit 0
-  elif [ '{{_is_linux}}' = '1' ] && [ -f .tools/appimagetool ]; then
-    # https://github.com/AppImage/appimagetool
-    echo '[INFO] Attempting to build appimage...'
-
-    # https://github.com/StratusFearMe21/cargo-appimage
-    # cargo appimage -p feat_desktop && echo '[DONE]' && exit 0
+  elif [ '{{_is_linux}}' = '1' ]; then
+    echo '[INFO] Attempting to build Linux installers and appimage...'
 
     # https://github.com/burtonageo/cargo-bundle
     cargo bundle -p feat_desktop {{ARGS}} && echo '[DONE]' && exit 0
