@@ -3,108 +3,55 @@
 
 set dotenv-load
 set export
+set shell := ["sh", "-c"]
+set windows-shell := ["C:\\Program Files\\Git\\usr\\bin\\sh.exe", "-cu"]
 set quiet := true
 
-# variables
-_is_linux := if os() == "linux" { "1" } else { "0" }
-_is_macos := if os() == "macos" { "1" } else { "0" }
-_is_windows := if os() == "windows" { "1" } else { "0" }
+# desktop
+import "Justpart.desktop.just"
+import? "Justpart.desktop.linux.just"
+import? "Justpart.desktop.macos.just"
+import? "Justpart.desktop.windows.just"
 
-app_name := "xplatform"
-
-# context
-import "Justpart.android.just"
+# mobile
+import "Justpart.mobile.just"
+import? "Justpart.mobile.android.just"
+import? "Justpart.mobile.ios.just"
 
 _list:
   just --list
 
+_workspace_set:
+  #!/usr/bin/env sh
+  mkdir -p ./target 2> /dev/null || true
+  just _desktop_set
+  just _mobile_set
+
 env:
-  #!/bin/sh
+  #!/usr/bin/env sh
   env
 
-prepare_icons:
-  #!/bin/sh
-  cd ./assets
-  magick -background transparent -density 1200 ./icon.svg \
-    -define icon:auto-resize="256,128,96,64,48,32,16" \
-      ./icon.ico
-  magick -background transparent -density 1200 ./icon.svg \
-    -resize 512x512 \
-      ./icon.png
-
-# --- SETUP ---
-
-setup_host_deps:
-  #!/bin/sh
-  if [ '{{_is_linux}}' = '1' ]; then
-    echo '[INFO] Setting up Linux host'
-    ./setup_linux.sh
-  elif [ '{{_is_macos}}' = '1' ]; then
-    echo '[INFO] Setting up macOS host'
-    sh ./setup_macos.sh
-  elif [ '{{_is_windows}}' = '1' ]; then
-    echo '[INFO] Setting up Windows host'
-    powershell ./setup_windows.ps1 || pwsh ./setup_windows.ps1
-  else
-    echo '[FAIL] Unsupported host'
-    exit 1
-  fi
-
-setup_host_tools:
-  #!/bin/sh
-  cargo install cargo-apk2 cargo-bundle
-
-# --- DESKTOP ---
-
-run_desktop:
-  #!/bin/sh
-  if [ ! -f ./icon.png ]; then
-    just prepare_icons
-  fi
-  cargo run -p feat_desktop
-
-build_desktop *ARGS: # add --release to produce optimised binary
-  #!/bin/sh
-  if [ ! -f ./icon.png ]; then
-    just prepare_icons
-  fi
-
-  export PATH="$(pwd)/.tools:$PATH"
-
-  if [ '{{_is_macos}}' = '1' ]; then
-    echo '[INFO] Attempting to build app bundle...'
-    # https://github.com/burtonageo/cargo-bundle
-    cargo bundle -p feat_desktop {{ARGS}} && echo '[DONE]' && exit 0
-  elif [ '{{_is_linux}}' = '1' ]; then
-    echo '[INFO] Attempting to build Linux installers and appimage...'
-
-    # https://github.com/burtonageo/cargo-bundle
-    cargo bundle -p feat_desktop {{ARGS}} && echo '[DONE]' && exit 0
-  fi
-
-  echo '[INFO] Compiling binary...'
-  cargo build -p feat_desktop {{ARGS}}
-  echo '[DONE]'
-
-# --- UTILS ---
+native:
+  #!/usr/bin/env sh
+  rustc -Vv | grep 'host: ' | cut -d' ' -f2
 
 clean:
-  #!/bin/sh
+  #!/usr/bin/env sh
+  just _workspace_set
   cargo clean
 
 release VARIANT:
-  #!/bin/sh
-  case '{{VARIANT}}':
-    android)
-      echo '[INFO] Preparing Android release'
-      just build_android --release
-      ls -lh 'target/release/apk/{{app_name}}.apk'
-      ;;
-    desktop)
-      echo '[INFO] Preparing desktop release'
-      just build_desktop --release
-      ls -lh ./target/release/{{app_name}}* | grep '^-rwxrwxr-x'
-      ;;
-    *)
-      echo '[FAIL] Unknown variant'
-  esac
+  #!/usr/bin/env sh
+  just {{VARIANT}} build --release
+  # case '{{VARIANT}}':
+  #   desktop)
+  #   linux)
+  #   macos)
+  #   windows)
+  #   mobile)
+  #   android)
+  #   ios)
+  #     ;;
+  #   *)
+  #     echo '[FAIL] Unknown variant'
+  # esac

@@ -1,10 +1,12 @@
 .cargo
+.env
 
-.tools/*
-!.tools/.keep
+feat_desktop/assets
 
-_android/*
-!_android/Cargo.toml
+feat_mobile/assets
+feat_mobile/Cargo.toml
+feat_mobile/release.keystore
+feat_mobile/secret.env
 
 assets/*
 !assets/icon.svg

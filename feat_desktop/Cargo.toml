@@ -1,19 +1,39 @@
 [package]
 name = "feat_desktop"
-version = "0.0.1"
-edition = "2024"
+version.workspace = true
+authors.workspace = true
+build = "build.rs"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+description = "xPlatform desktop"
+
+# ---
 
 [[bin]]
 name = "xPlatform"
 path = "src/main.rs"
 
+[build-dependencies]
+winresource = "0.1.30"
+
 [dependencies]
-feat_shared = { path = "../" }
-slint = { version = "1.15", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
+feat_shared = { path = ".." }
 i-slint-backend-winit = "1.15"
+slint = { version = "1.15", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
 winit = { version = "0.30", features = ["wayland", "x11"] }
 
 [package.metadata.bundle]
 name = "xPlatform"
 identifier = "com.mikko.xplatform"
-icon = ["assets/icon.png"] # relative to workspace root
+# version = "0.0.1"
+icon = ["assets/icon.svg", "assets/icon.ico"] # relative to workspace root (on linux )
+copyright = "Copyright © 2026"
+short_description = "GUI application"
+
+[package.metadata.winresource]
+OriginalFilename = "xPlatform.exe"
+LegalCopyright = "Copyright © 2026"
+FileDescription = "GUI application"
+ProductName = "xPlatform"
+# ProductVersion = "0.0.1"

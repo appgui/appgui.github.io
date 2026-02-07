@@ -1,16 +1,11 @@
 {
-  "features": {
-    "edit_prediction_provider": "none"
-  },
   "show_completion_documentation": false,
   "autosave": "on_focus_change",
   "auto_install_extensions": {
+    "dprint": true,
     "just": true,
     "toml": true,
-    "slint": true
-  },
-  "file_types": {
-    "Dockerfile": ["Containerfile*"],
+    "slint": true,
   },
   "formatter": {
     "external": {

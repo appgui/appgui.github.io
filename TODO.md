@@ -1,4 +1,4 @@
-- optimise titlebar's "double-click to maximise" handling
-- fix dragging on COSMIC desktop
-- tray indicator
-- notification
+- tray indicator (https://crates.io/crates/tray-icon)
+- clean up the code and organise features (ex: fullscreen feature disabled by default on Android)
+- compile drawable xml from svg (for Android)
+- notifications
