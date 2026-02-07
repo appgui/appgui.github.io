@@ -1,9 +1,9 @@
-#!/usr/bin/env powershell
+#!/usr/bin/env pwsh
 # Windows Development Environment Setup
 # Must be run as Administrator
 
 $ErrorActionPreference = "Stop"
-$ProgressPreference = 'Continue'
+$ProgressPreference = 'SilentlyContinue'
 
 function Pause-Script {
   Write-Host "`nPress Enter to continue..." -ForegroundColor Yellow
@@ -25,44 +25,79 @@ try {
 
   Write-Host "`n=== Windows Development Environment Setup ===`n" -ForegroundColor Cyan
 
-  Write-Host "[1/6] Setting up Winget..." -ForegroundColor Green
+  Write-Host "[1/5] Setting up Winget..." -ForegroundColor Green
   if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Host "  Installing Winget..." -ForegroundColor Yellow
     irm https://raw.githubusercontent.com/asheroto/winget-install/master/winget-install.ps1 | iex
   }
-  Write-Host "  Winget is ready." -ForegroundColor Gray
+  Write-Host "[DONE] Winget is ready." -ForegroundColor Gray
 
-  Write-Host "[2/6] Setting up Dprint..." -ForegroundColor Green
-  if (-not (Get-Command dprint -ErrorAction SilentlyContinue)) {
-    Write-Host "  Installing Dprint..." -ForegroundColor Yellow
-    iwr https://dprint.dev/install.ps1 -useb | iex
+  Write-Host "[2/5] Setting up pwsh..." -ForegroundColor Green
+  if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) {
+    Write-Host "  Installing pwsh..." -ForegroundColor Yellow
+    winget install --id Microsoft.PowerShell
+  } else {
+    Write-Host "  Upgrading pwsh..." -ForegroundColor Yellow
+    winget upgrade --id Microsoft.PowerShell
   }
-  Write-Host "  Dprint is ready." -ForegroundColor Gray
+  # Add pwsh to PATH if not present
+  $pwshPath = "C:\Program Files\PowerShell\7"
+  $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  if ($currentPath -notlike "*$pwshPath*") {
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$pwshPath", "Machine")
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  }
+  Write-Host "[DONE] pwsh is ready." -ForegroundColor Gray
 
-  Write-Host "[3/6] Setting up Just..." -ForegroundColor Green
+  Write-Host "[3/5] Setting up Just..." -ForegroundColor Green
   if (-not (Get-Command just -ErrorAction SilentlyContinue)) {
     Write-Host "  Installing Just..." -ForegroundColor Yellow
-    winget install --id casey.just -e --source winget --accept-package-agreements --accept-source-agreements
+    winget install --id casey.just -e --source winget
+  } else {
+    Write-Host "  Upgrading Just..." -ForegroundColor Yellow
+    winget upgrade --id casey.just -e --source winget
   }
-  Write-Host "  Just is ready." -ForegroundColor Gray
+  Write-Host "[DONE] Just is ready." -ForegroundColor Gray
 
-  Write-Host "[4/6] Setting up Rustup..." -ForegroundColor Green
-  if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) {
-    Write-Host "  Installing Rustup..." -ForegroundColor Yellow
-    winget install -e --id Rustlang.Rustup
-  }
-  Write-Host "  Rustup is ready." -ForegroundColor Gray
-
-  Write-Host "[4/6] Setting up Git..." -ForegroundColor Green
+  Write-Host "[4/5] Setting up Git shell..." -ForegroundColor Green
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "  Installing Git..." -ForegroundColor Yellow
-    winget install --id Git.Git -e --source winget --accept-package-agreements
+    winget install --id Git.Git -e --source winget
+  } else {
+    # Check if update is available
+    $updateCheck = winget upgrade --id Git.Git -e --source winget
+    if ($updateCheck -match "No applicable update found") {
+      Write-Host "  Git is already up to date." -ForegroundColor Gray
+    } else {
+      Write-Host "  Upgrading Git..." -ForegroundColor Yellow
+      # Check if Git processes are running
+      $gitProcesses = Get-Process | Where-Object {$_.Path -like "*\Git\*"}
+      if ($gitProcesses) {
+        Write-Host "  Git processes are running and need to be terminated." -ForegroundColor Yellow
+        Write-Host "  Press Enter to force terminate running processes..." -ForegroundColor Yellow
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $gitProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+      }
+      winget upgrade --id Git.Git -e --source winget
+    }
   }
-  Write-Host "  Git is ready." -ForegroundColor Gray
+  # Add Git to PATH if not present
+  $gitCmd = "C:\Program Files\Git\cmd"
+  $gitUsrBin = "C:\Program Files\Git\usr\bin"
+  $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  if ($currentPath -notlike "*$gitCmd*") {
+    $currentPath = "$currentPath;$gitCmd"
+  }
+  if ($currentPath -notlike "*$gitUsrBin*") {
+    $currentPath = "$currentPath;$gitUsrBin"
+  }
+  [Environment]::SetEnvironmentVariable("Path", $currentPath, "Machine")
+  $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  Write-Host "[DONE] Git is ready." -ForegroundColor Gray
 
-  Write-Host "[4/6] Setting up tools..." -ForegroundColor Green
-  just setup_host_tools
-  Write-Host "  Tools are ready." -ForegroundColor Gray
+  Write-Host "[5/5] Setting up dependencies..." -ForegroundColor Green
+  & "C:\\Program Files\\Git\\bin\\bash.exe" -c 'just windows_set_deps'
+  Write-Host "[DONE] Tools are ready." -ForegroundColor Gray
 
   Write-Host ""
   Write-Host "=== Setup complete ===" -ForegroundColor Cyan

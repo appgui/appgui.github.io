@@ -6,6 +6,8 @@ use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 
 use crate::AppWindow;
 
+pub mod theme;
+
 #[derive(Clone, Copy, PartialEq)]
 pub enum DisplayMode {
     Ram,
