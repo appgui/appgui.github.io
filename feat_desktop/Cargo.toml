@@ -23,6 +23,26 @@ i-slint-backend-winit = "1.15"
 slint = { version = "1.15", default-features = false, features = ["std", "backend-winit", "renderer-skia", "compat-1-2", "unstable-winit-030"] }
 winit = { version = "0.30", features = ["wayland", "x11"] }
 
+# Tray icon and notifications
+image = { version = "0.25", default-features = false, features = ["png"] }
+lazy_static = { workspace = true }
+notify-rust = "4.11"
+
+# Tray icon - Linux uses ksni
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = { version = "0.3", features = ["blocking"] }
+tokio = { workspace = true }
+
+# Tray icon - Windows
+[target.'cfg(target_os = "windows")'.dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
+tray-icon = "0.21"
+
+# Tray icon - MacOS
+[target.'cfg(target_os = "macos")'.dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
+tray-icon = "0.21"
+
 [package.metadata.bundle]
 name = "xPlatform"
 identifier = "com.mikko.xplatform"

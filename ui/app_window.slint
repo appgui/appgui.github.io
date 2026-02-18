@@ -1,27 +1,26 @@
 import { ScrollView } from "std-widgets.slint";
 import { CustomToggleButton } from "components/custom_button.slint";
 import { ThemeSelector } from "components/theme_selector.slint";
+import { FullscreenToggle } from "components/fullscreen_toggle.slint";
 
-// Theme mode: 0 = auto (system), 1 = light, 2 = dark
 export component AppWindow inherits Window {
   title: "xPlatform";
   icon: @image-url("../assets/icon.svg");
   background: root.bg-primary;
-  preferred-width: 400px;
-  preferred-height: 400px;
-  min-width: 400px;
-  min-height: 400px;
-  no-frame: false;
+  preferred-width: 500px;
+  preferred-height: 500px;
+  min-width: 500px;
+  min-height: 500px;
 
+  // Restored to fix compilation in feat_desktop/src/main.rs
   in property <bool> is-mobile: false;
+
+  in-out property <int> theme-mode: 0;
+  in property <bool> system-is-dark: true;
+  in-out property <bool> is-fullscreen: false;
   in-out property <string> display-value: "—";
   in-out property <string> display-label: "—";
   in-out property <string> button-text: "Show Uptime";
-  in-out property <bool> is-fullscreen: false;
-
-  // Theme properties
-  in-out property <int> theme-mode: 0; // 0=auto, 1=light, 2=dark
-  in property <bool> system-is-dark: true; // System preference
 
   in-out property <length> safe-inset-left: 0px;
   in-out property <length> safe-inset-top: 0px;
@@ -31,53 +30,37 @@ export component AppWindow inherits Window {
   callback toggle-mode();
   callback quit();
   callback toggle-fullscreen();
-  callback cycle-theme(); // Cycles through auto -> light -> dark -> auto
+  callback cycle-theme();
+  callback show-notification(string, string);
+  callback update-tray(string);
 
-  property <length> toolbar-height: 40px;
-  property <length> submenu-height: 64px;
-
-  // Computed: is the UI currently in dark mode?
+  property <length> toolbar-height: 64px;
   property <bool> is-dark: root.theme-mode == 2 || (root.theme-mode == 0 && root.system-is-dark);
 
-  // Color palette - dynamically switches based on theme
   property <color> bg-primary: root.is-dark ? #0f172a : #f8fafc;
   property <color> bg-secondary: root.is-dark ? #1e293b : #e2e8f0;
-  property <color> bg-tertiary: root.is-dark ? #334155 : #cbd5e1;
   property <color> text-primary: root.is-dark ? #f1f5f9 : #0f172a;
   property <color> text-secondary: root.is-dark ? #94a3b8 : #64748b;
   property <color> text-accent: root.is-dark ? #38bdf8 : #0284c7;
   property <color> hover-bg: root.is-dark ? #334155 : #cbd5e1;
   property <color> popup-bg: root.is-dark ? #1e293b : #ffffff;
-  property <color> shadow-color: root.is-dark ? #00000080 : #00000020;
 
   VerticalLayout {
-    ScrollView {
+    padding-top: root.safe-inset-top;
+    padding-left: root.safe-inset-left;
+    padding-right: root.safe-inset-right;
+
+    Rectangle {
       vertical-stretch: 1;
       VerticalLayout {
-        padding-left: 32px + root.safe-inset-left;
-        padding-right: 32px + root.safe-inset-right;
-        padding-top: 32px + root.safe-inset-top;
-        padding-bottom: 32px;
+        padding: 32px;
         spacing: 32px;
         alignment: center;
-
         VerticalLayout {
           spacing: 6px;
-          alignment: center;
-          Text {
-            text: root.display-value;
-            font-size: 56px;
-            color: root.text-accent;
-            horizontal-alignment: center;
-          }
-          Text {
-            text: root.display-label;
-            font-size: 18px;
-            color: root.text-secondary;
-            horizontal-alignment: center;
-          }
+          Text { text: root.display-value; font-size: 56px; color: root.text-accent; horizontal-alignment: center; }
+          Text { text: root.display-label; font-size: 18px; color: root.text-secondary; horizontal-alignment: center; }
         }
-
         CustomToggleButton {
           text: root.button-text;
           is-dark: root.is-dark;
@@ -86,150 +69,103 @@ export component AppWindow inherits Window {
       }
     }
 
-    HorizontalLayout {
+    Rectangle {
       height: root.toolbar-height;
-      padding-left: 12px + root.safe-inset-left;
-      padding-right: 12px + root.safe-inset-right;
+      background: root.bg-secondary;
 
-      icon_touch := TouchArea {
-        width: 36px; height: 36px;
-        mouse-cursor: MouseCursor.pointer;
-        clicked => { submenu_popup.show(); }
-        Image {
-          source: @image-url("../assets/icon.svg");
-          width: 24px; height: 24px;
-        }
-      }
+      HorizontalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        alignment: space-between;
 
-      Rectangle { horizontal-stretch: 1; }
-
-      ThemeSelector {
-        theme-mode: root.theme-mode;
-        icon-color: root.text-secondary;
-        hover-bg: root.hover-bg;
-        clicked => { root.cycle-theme(); }
-      }
-
-      fullscreen_btn := TouchArea {
-        width: 36px; height: 36px;
-        mouse-cursor: MouseCursor.pointer;
-        clicked => { root.toggle-fullscreen(); }
-        Rectangle {
-          background: fullscreen_btn.has-hover ? root.hover-bg : transparent;
-          border-radius: 4px;
-
-          if !root.is-fullscreen : Path {
-            commands: "M 3 5 L 3 3 L 5 3 M 11 3 L 13 3 L 13 5 M 13 11 L 13 13 L 11 13 M 5 13 L 3 13 L 3 11";
-            stroke: root.text-secondary;
-            stroke-width: 1.5px;
-            viewbox-width: 20; viewbox-height: 20;
-            x: 8px; y: 8px;
+        VerticalLayout {
+          alignment: center;
+          ThemeSelector {
+            theme-mode: root.theme-mode;
+            icon-color: root.text-secondary;
+            hover-bg: root.hover-bg;
+            clicked => { theme_popup.show(); }
           }
+        }
 
-          if root.is-fullscreen : Path {
-            commands: "M 5 3 L 5 5 L 3 5 M 13 5 L 11 5 L 11 3 M 11 13 L 11 11 L 13 11 M 3 11 L 5 11 L 5 13";
-            stroke: root.text-secondary;
-            stroke-width: 1.5px;
-            viewbox-width: 20; viewbox-height: 20;
-            x: 8px; y: 8px;
+        VerticalLayout {
+          alignment: center;
+          menu_ta := TouchArea {
+            clicked => { submenu_popup.show(); }
+            Rectangle {
+              width: 36px; height: 36px;
+              background: menu_ta.has-hover ? root.hover-bg : transparent;
+              border-radius: 4px;
+              Image {
+                source: @image-url("../assets/icon.svg");
+                width: 24px; height: 24px;
+                colorize: root.text-secondary;
+              }
+            }
+          }
+        }
+
+        VerticalLayout {
+          alignment: center;
+          FullscreenToggle {
+            is-fullscreen: root.is-fullscreen;
+            icon-colour: root.text-secondary;
+            hover-bg: root.hover-bg;
+            clicked => { root.toggle-fullscreen(); }
           }
         }
       }
     }
+    Rectangle { height: root.safe-inset-bottom; background: root.bg-secondary; }
+  }
 
+  theme_popup := PopupWindow {
+    x: 24px; y: root.height - root.toolbar-height - root.safe-inset-bottom - 130px;
+    width: 140px;
     Rectangle {
-      height: root.safe-inset-bottom;
-      background: root.bg-primary;
+      background: root.popup-bg;
+      border-radius: 6px;
+      VerticalLayout {
+        padding: 4px;
+        TouchArea { height: 36px; clicked => { root.theme-mode = 0; theme_popup.close(); root.cycle-theme(); }
+          Text { text: "Auto"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
+        TouchArea { height: 36px; clicked => { root.theme-mode = 1; theme_popup.close(); root.cycle-theme(); }
+          Text { text: "Light"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
+        TouchArea { height: 36px; clicked => { root.theme-mode = 2; theme_popup.close(); root.cycle-theme(); }
+          Text { text: "Dark"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
+      }
     }
   }
 
   submenu_popup := PopupWindow {
-    x: 12px + root.safe-inset-left;
-    y: root.height - root.toolbar-height - root.safe-inset-bottom - root.submenu-height;
+    x: (root.width - 150px) / 2; y: root.height - root.toolbar-height - root.safe-inset-bottom - 90px;
     width: 150px;
-    close-policy: close-on-click-outside;
     Rectangle {
       background: root.popup-bg;
       border-radius: 6px;
-      drop-shadow-blur: 8px;
-      drop-shadow-color: root.shadow-color;
-      drop-shadow-offset-y: 2px;
       VerticalLayout {
         padding: 4px;
-        about_touch := TouchArea {
-          height: 28px;
-          clicked => { submenu_popup.close(); about_popup.show(); }
-          Rectangle {
-            background: about_touch.has-hover ? root.hover-bg : transparent;
-            border-radius: 4px;
-            Text {
-              text: "About";
-              color: root.text-primary;
-              font-size: 13px;
-              x: 12px;
-              vertical-alignment: center;
-            }
-          }
-        }
-        exit_touch := TouchArea {
-          height: 28px;
-          clicked => { submenu_popup.close(); root.quit(); }
-          Rectangle {
-            background: exit_touch.has-hover ? root.hover-bg : transparent;
-            border-radius: 4px;
-            Text {
-              text: "Exit";
-              color: root.text-primary;
-              font-size: 13px;
-              x: 12px;
-              vertical-alignment: center;
-            }
-          }
-        }
+        TouchArea { height: 36px; clicked => { submenu_popup.close(); about_popup.show(); }
+          Text { text: "About"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
+        TouchArea { height: 36px; clicked => { submenu_popup.close(); root.quit(); }
+          Text { text: "Exit"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
       }
     }
   }
 
   about_popup := PopupWindow {
-    x: 12px + root.safe-inset-left;
-    y: root.height - root.toolbar-height - root.safe-inset-bottom - 200px;
+    x: (root.width - 220px) / 2; y: (root.height - 240px) / 2;
     width: 220px;
-    close-policy: close-on-click-outside;
     Rectangle {
       background: root.popup-bg;
       border-radius: 8px;
-      drop-shadow-blur: 8px;
-      drop-shadow-color: root.shadow-color;
-      drop-shadow-offset-y: 2px;
       VerticalLayout {
-        padding: 24px; spacing: 12px; alignment: center;
-        Image { source: @image-url("../assets/icon.svg"); width: 48px; height: 48px; }
-        Text {
-          text: "xPlatform";
-          color: root.text-primary;
-          font-size: 16px;
-          font-weight: 700;
-          horizontal-alignment: center;
-        }
-        Text {
-          text: "v0.0.1";
-          color: root.text-secondary;
-          font-size: 13px;
-          horizontal-alignment: center;
-        }
-        TouchArea {
-          height: 30px;
-          clicked => { about_popup.close(); }
-          Rectangle {
-            background: root.bg-tertiary;
-            border-radius: 6px;
-            Text {
-              text: "OK";
-              color: root.text-primary;
-              font-size: 13px;
-              horizontal-alignment: center;
-              vertical-alignment: center;
-            }
+        padding: 24px; spacing: 12px;
+        Image { source: @image-url("../assets/icon.svg"); width: 48px; horizontal-alignment: center; }
+        Text { text: "xPlatform"; color: root.text-primary; font-weight: 700; horizontal-alignment: center; }
+        TouchArea { height: 32px; clicked => { about_popup.close(); }
+          Rectangle { background: root.text-accent; border-radius: 4px;
+            Text { text: "Close"; color: white; vertical-alignment: center; horizontal-alignment: center; }
           }
         }
       }

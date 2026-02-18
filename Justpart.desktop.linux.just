@@ -21,7 +21,9 @@ cc_to_lin_set_deps TARGET:
 linux_debian_set_deps:
   #!/usr/bin/env sh
   sudo su -c 'yes | apt install \
-    libfontconfig1-dev libssl-dev pkg-config rustup'
+    libfontconfig1-dev libssl-dev pkg-config rustup \
+    libdbus-1-dev libgtk-3-dev \
+  '
 
 [linux]
 linux_debian_set_deps_cc_mac:

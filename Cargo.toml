@@ -13,8 +13,10 @@ publish = false
 slint-build = "1.15"
 
 [dependencies]
+lazy_static = { workspace = true }
 slint = { version = "1.15", default-features = false, features = ["compat-1-2"] }
 sysinfo = "0.38"
+tokio = { workspace = true }
 
 [lib]
 path = "src/lib.rs"
@@ -42,3 +44,7 @@ authors = ["Mikhail Timofeev <mikko.timofeev@gmail.com>"]
 edition = "2024"
 license-file = "./LICENSE-MIT"
 repository = "https://gitlab.com/mikko-timofeev/xPlatform"
+
+[workspace.dependencies]
+lazy_static = "1.5"
+tokio = { version = "1.49", features = ["rt", "time", "macros"] }

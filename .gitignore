@@ -3,7 +3,7 @@
 
 feat_desktop/assets
 
-feat_mobile/assets
+feat_mobile/res
 feat_mobile/Cargo.toml
 feat_mobile/release.keystore
 feat_mobile/secret.env

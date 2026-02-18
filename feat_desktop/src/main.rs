@@ -1,47 +1,39 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use feat_shared::AppWindow;
+mod tray;
+
 use slint::ComponentHandle;
 
+use feat_shared::AppWindow;
+
 fn main() -> Result<(), slint::PlatformError> {
-    let ui = AppWindow::new()?;
-    ui.set_is_mobile(false);
+  let ui = AppWindow::new()?;
+  ui.set_is_mobile(false);
 
-    let ui_weak = ui.as_weak();
+  let ui_weak = ui.as_weak();
 
-    // ── Fullscreen ──────────────────────────────────────────────────────────
-    ui.on_toggle_fullscreen({
-        let ui_weak = ui_weak.clone();
-        move || {
-            println!("🔵 toggle_fullscreen callback triggered!");
+  ui.on_toggle_fullscreen({
+    let ui_weak = ui_weak.clone();
+    move || {
+      if let Some(ui) = ui_weak.upgrade() {
+        let current_state = ui.get_is_fullscreen();
+        ui.window().set_fullscreen(!current_state);
+        ui.set_is_fullscreen(!current_state);
+      }
+    }
+  });
 
-            if let Some(ui) = ui_weak.upgrade() {
-                let current_state = ui.get_is_fullscreen();
-                println!("🟡 Current fullscreen state: {}", current_state);
+  ui.on_quit(|| {
+    std::process::exit(0);
+  });
 
-                let window = ui.window();
-                let new_state = !current_state;
+  println!("🚀 Starting app...");
 
-                println!("🔷 Setting fullscreen to: {}", new_state);
-                window.set_fullscreen(new_state);
+  feat_shared::run_app_with_tray(ui, |ui_weak| {
+    if let Err(e) = tray::setup_tray_callbacks(ui_weak) {
+      eprintln!("⚠️  Failed to initialize tray icon: {}", e);
+    }
+  });
 
-                println!("🔷 Updating UI state");
-                ui.set_is_fullscreen(new_state);
-
-                println!("✅ Fullscreen toggle complete");
-            }
-        }
-    });
-
-    // ── Quit ────────────────────────────────────────────────────────────────
-    ui.on_quit(|| {
-        println!("👋 Quit callback triggered");
-        std::process::exit(0);
-    });
-
-    println!("🚀 Starting app...");
-
-    // Theme system and background updates are initialized in feat_shared::run_app
-    feat_shared::run_app(ui);
-    Ok(())
+  Ok(())
 }

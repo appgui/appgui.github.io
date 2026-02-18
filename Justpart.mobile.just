@@ -7,9 +7,9 @@ _mobile_set:
     cp -f ./Cargo.base.toml ./Cargo.toml
   # fi
 
-  if [ ! -f ./target ] && [ ! -L ./target ]; then
+  if [ ! -d ./target ] && [ ! -L ./target ]; then
     ln -sf ../target ./target
   fi
-  if [ ! -f ./assets ] && [ ! -L ./assets ]; then
-    ln -sf ../assets ./assets
+  if [ ! -d ./res ]; then
+    just android_icons_make
   fi

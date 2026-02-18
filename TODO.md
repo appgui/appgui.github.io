@@ -1,4 +1,5 @@
-- tray indicator (https://crates.io/crates/tray-icon)
+- Windows, Linux, MacOS: set correct tray icon
+
 - clean up the code and organise features (ex: fullscreen feature disabled by default on Android)
 - compile drawable xml from svg (for Android)
 - notifications

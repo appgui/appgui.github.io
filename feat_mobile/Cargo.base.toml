@@ -25,17 +25,33 @@ apk_name = "xPlatform"
 build_targets = ["aarch64-linux-android"]
 strip = "strip"
 use_aapt2 = true
-resources = "../assets"
+resources = "./res"
+java_sources = "java"
 
 [package.metadata.android.sdk]
-min_sdk_version = 33
-target_sdk_version = 36
+min_sdk_version = 34
+target_sdk_version = 35
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.FOREGROUND_SERVICE"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.POST_NOTIFICATIONS"
 
 [package.metadata.android.application]
-has_code = false
+has_code = true
 debuggable = false
 label = "xPlatform"
 icon = "@mipmap/ic_launcher"
+round_icon = "@mipmap/ic_launcher"
+
+[[package.metadata.android.application.service]]
+name = ".TrayService"
+foreground_service_type = "dataSync"
+exported = false
 
 [[package.metadata.android.application.activity]]
 name = "android.app.NativeActivity"

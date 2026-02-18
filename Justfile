@@ -40,6 +40,10 @@ clean:
   just _workspace_set
   cargo clean
 
+format:
+  #!/usr/bin/env sh
+  cargo fmt --all
+
 release VARIANT:
   #!/usr/bin/env sh
   just {{VARIANT}} build --release

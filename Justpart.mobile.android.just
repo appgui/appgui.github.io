@@ -57,7 +57,7 @@ android_setup_sdk_compat: # allow running Android SDK (x86_64) on ARM64 host
   #!/usr/bin/env sh
   if [ '{{_is_amd64}}' = '0' ]; then
     sudo sh -c '\
-      dnf install qemu-user-static systemd-binfmt; \
+      dnf install qemu-user-static systemd-udev; \
       yes | dnf --installroot=/opt/x86_64-root --forcearch=x86_64 install \
         glibc zlib \
           --use-host-config; \
@@ -71,6 +71,20 @@ android_setup_sdk_compat: # allow running Android SDK (x86_64) on ARM64 host
   else
     echo '[INFO] Using native SDK binaries...'
   fi
+
+android_analyse_apk APK="":
+  #!/usr/bin/env sh
+  set -eu
+  CMDLINE_TOOLS="${ANDROID_HOME}/{{ _android_cmdline_tools_subdir }}"
+  APKANALYSER="${CMDLINE_TOOLS}/bin/apkanalyzer"
+
+  if [ -z "{{APK}}" ]; then
+    APK="./feat_mobile/target/release/apk/{{_app_name_mobile}}.apk"
+  else
+    APK="{{APK}}"
+  fi
+
+  $APKANALYSER manifest print "${APK}"
 
 android_setup_sdk:
   #!/usr/bin/env sh
@@ -173,12 +187,12 @@ android_setup_keystore:
   KEY_ALIAS="$KEY_ALIAS"
   KEY_PASSWORD="$KEY_PASSWORD"
   KEYSTORE_PASSWORD="$KEY_PASSWORD"
-  DN_CN="{{_DN_CN}}"
-  DN_OU="{{_DN_OU}}"
-  DN_O="{{_DN_O}}"
-  DN_L="{{_DN_L}}"
-  DN_ST="{{_DN_ST}}"
-  DN_C="{{_DN_C}}"
+  CN="{{_DN_CN}}"
+  OU="{{_DN_OU}}"
+  O="{{_DN_O}}"
+  L="{{_DN_L}}"
+  ST="{{_DN_ST}}"
+  C="{{_DN_C}}"
     """ > ./secret.env
   fi
 
@@ -236,23 +250,44 @@ android_icons_make:
         ./icon.png
   fi
 
-  mkdir -p ./mipmap
-  mkdir -p ./mipmap-mdpi
-  mkdir -p ./mipmap-hdpi
-  mkdir -p ./mipmap-xhdpi
-  mkdir -p ./mipmap-xxhdpi
-  mkdir -p ./mipmap-xxxhdpi
+  mkdir -p ../feat_mobile/res/mipmap
+  mkdir -p ../feat_mobile/res/mipmap-mdpi
+  mkdir -p ../feat_mobile/res/mipmap-hdpi
+  mkdir -p ../feat_mobile/res/mipmap-xhdpi
+  mkdir -p ../feat_mobile/res/mipmap-xxhdpi
+  mkdir -p ../feat_mobile/res/mipmap-xxxhdpi
+  mkdir -p ../feat_mobile/res/drawable
 
-  cp ./icon.png ./mipmap/ic_launcher.png
-  magick ./icon.png -resize 48x48 ./mipmap-mdpi/ic_launcher.png
-  magick ./icon.png -resize 72x72 ./mipmap-hdpi/ic_launcher.png
-  magick ./icon.png -resize 96x96 ./mipmap-xhdpi/ic_launcher.png
-  magick ./icon.png -resize 144x144 ./mipmap-xxhdpi/ic_launcher.png
-  magick ./icon.png -resize 192x192 ./mipmap-xxxhdpi/ic_launcher.png
+  cp ./icon.png \
+    ../feat_mobile/res/mipmap/ic_launcher.png
+  magick ./icon.png \
+    -resize 48x48 \
+      ../feat_mobile/res/mipmap-mdpi/ic_launcher.png
+  magick ./icon.png \
+    -resize 72x72 \
+      ../feat_mobile/res/mipmap-hdpi/ic_launcher.png
+  magick ./icon.png \
+    -resize 96x96 \
+      ../feat_mobile/res/mipmap-xhdpi/ic_launcher.png
+  magick ./icon.png \
+    -resize 144x144 \
+      ../feat_mobile/res/mipmap-xxhdpi/ic_launcher.png
+  magick ./icon.png \
+    -resize 192x192 \
+      ../feat_mobile/res/mipmap-xxxhdpi/ic_launcher.png
+
+  # This creates a white version of icon shape for the status bar
+  magick ./icon.png \
+    -alpha off -fill white \
+    -colorize 100% ./icon.png \
+    -compose CopyOpacity -composite \
+      ../feat_mobile/res/drawable/ic_notification.png
 
   echo '[DONE] Android icons generated:'
-  ls -lh ./mipmap-*/ic_launcher.png
-
+  ls -lh \
+    ../feat_mobile/res/mipmap-*/ic_launcher.png
+  ls -lh \
+    ../feat_mobile/res/drawable/ic_notification.png
 
 android_setup:
   #!/usr/bin/env sh
@@ -268,7 +303,11 @@ android_setup:
 
 android_build *ARGS:
   #!/usr/bin/env sh
-  android build {{ARGS}}
+  just android build {{ARGS}}
+
+android_run *ARGS:
+  #!/usr/bin/env sh
+  just android run {{ARGS}}
 
 android ACTION='' *ARGS:
   #!/usr/bin/env sh
@@ -289,7 +328,7 @@ android ACTION='' *ARGS:
   fi
 
   # Generate icons if they don't exist
-  if [ ! -f ../assets/mipmap-mdpi/ic_launcher.png ]; then
+  if [ ! -f ./res/mipmap-mdpi/ic_launcher.png ]; then
     echo '[INFO] Android icons not found, generating...'
     cd ..
     just android_icons_make
