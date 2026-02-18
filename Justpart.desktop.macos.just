@@ -25,15 +25,23 @@ macos_set_deps:
 
 macos_build *ARGS:
   #!/usr/bin/env sh
-  just macos build {{ARGS}}
+  just macos build native {{ARGS}}
 
 [macos]
 macos_run *ARGS:
   #!/usr/bin/env sh
-  just macos run {{ARGS}}
+  just macos run native {{ARGS}}
 
-macos ACTION='' *ARGS:
+macos ACTION='' TARGET='native' *ARGS:
   #!/usr/bin/env sh
+  if [ '{{TARGET}}' = 'native' ] || \
+    [ '{{TARGET}}' = '{{_target_mac_arm64}}' ]; then
+    echo '[INFO] Target: {{TARGET}}'
+  else
+    echo '[FAIL] "{{TARGET}}" is not a supported target'
+    exit 1
+  fi
+
   just _workspace_set
   if [ ! -f ./assets/icon.ico ]; then
     just desktop_icons_make
@@ -43,6 +51,15 @@ macos ACTION='' *ARGS:
   set -e
   if [ -f ../.env ]; then
     . ../.env
+  fi
+
+  OUR_PLATFORM="$(just native)"
+
+  if [ '{{TARGET}}' = 'native' ] || [ "${OUR_PLATFORM}" = '{{TARGET}}' ]; then
+    export TARGET="${OUR_PLATFORM}"
+  else
+    echo '[FAIL] Cross-compilation is not implemented yet'
+    exit 1
   fi
 
   command -v xcrun &>/dev/null || {

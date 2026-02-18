@@ -8,10 +8,10 @@ _desktop_set:
   #!/usr/bin/env sh
   cd ./feat_desktop
 
-  if [ ! -f ./target ] && [ ! -L ./target ]; then
+  if [ ! -d ./target ] && [ ! -L ./target ]; then
     ln -sf ../target ./target
   fi
-  if [ ! -f ./assets ] && [ ! -L ./assets ]; then
+  if [ ! -d ./assets ] && [ ! -L ./assets ]; then
     ln -sf ../assets ./assets
   fi
 
@@ -41,9 +41,17 @@ desktop_set_deps:
 desktop_set_tools:
   #!/usr/bin/env sh
   cargo install \
-    --git https://github.com/mikko-timofeev/cargo-bundle \
-    --branch linux_svg_icons \
+    --git https://github.com/burtonageo/cargo-bundle \
+    --branch master \
       cargo-bundle
+
+desktop_build *ARGS:
+  #!/usr/bin/env sh
+  just desktop build native {{ARGS}}
+
+desktop_run *ARGS:
+  #!/usr/bin/env sh
+  just desktop run native {{ARGS}}
 
 desktop ACTION='' TARGET='native' *ARGS:
   #!/usr/bin/env sh

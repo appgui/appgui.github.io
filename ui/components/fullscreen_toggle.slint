@@ -1,0 +1,43 @@
+export component FullscreenToggle inherits Rectangle {
+  in property <bool> is-fullscreen: false;
+  in property <color> icon-colour: #94a3b8;
+  in property <color> hover-bg: #334155;
+
+  callback clicked();
+
+  width: 44px;
+  height: 44px;
+
+  touch := TouchArea {
+    mouse-cursor: MouseCursor.pointer;
+    clicked => { root.clicked(); }
+
+    Rectangle {
+      width: 36px;
+      height: 36px;
+      x: (parent.width - self.width) / 2;
+      y: (parent.height - self.height) / 2;
+      background: touch.has-hover ? root.hover-bg : transparent;
+      border-radius: 4px;
+      animate background { duration: 140ms; }
+
+      Path {
+        width: 24px;
+        height: 24px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        stroke: root.icon-colour;
+        stroke-width: 2px;
+        viewbox-width: 24;
+        viewbox-height: 24;
+
+        // Logic:
+        // When NOT fullscreen: Corners are closer to centre (suggesting 'expand')
+        // When fullscreen: Corners are pushed to the very edges (suggesting 'contract' or 'active state')
+        commands: root.is-fullscreen ?
+          "M 2 7 L 7 7 L 7 2 M 17 2 L 17 7 L 22 7 M 22 17 L 17 17 L 17 22 M 7 22 L 7 17 L 2 17" :
+          "M 10 4 L 4 4 L 4 10 M 14 4 L 20 4 L 20 10 M 20 14 L 20 20 L 14 20 M 10 20 L 4 20 L 4 14";
+      }
+    }
+  }
+}
