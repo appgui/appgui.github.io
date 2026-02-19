@@ -1,0 +1,29 @@
+stages:
+  - trigger-github-build
+
+trigger-github-multiplatform-build:
+  stage: trigger-github-build
+  image: alpine/curl:latest
+  variables:
+    GITHUB_REPO: $GITHUB_REPO
+    GITHUB_TOKEN: $GITHUB_TOKEN # fine-grained token with access to GITHUB_REPO
+  script:
+    - TAG=${CI_COMMIT_TAG}
+    - |
+      curl -s -X POST \
+        -H "Accept: application/vnd.github.v3+json" \
+        -H "Authorization: token $GITHUB_TOKEN" \
+        -H "Content-Type: application/json" \
+        https://api.github.com/repos/$GITHUB_REPO/dispatches \
+        -d "{
+          \"event_type\": \"build-release\",
+          \"client_payload\": {
+            \"tag\": \"$TAG\",
+            \"gitlab_repo\": \"$CI_REPOSITORY_URL\",
+            \"gitlab_commit\": \"$CI_COMMIT_SHA\"
+          }
+        }" \
+      && echo "[DONE] Trigger sent to GitHub for tag $TAG_NAME" \
+      || echo "[FAIL] Couldn't send the build request for tag $TAG_NAME"
+  only:
+    - tags
