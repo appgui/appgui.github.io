@@ -20,10 +20,9 @@ cc_to_lin_set_deps TARGET:
 [linux]
 linux_debian_set_deps:
   #!/usr/bin/env sh
-  sudo su -c 'yes | apt install \
-    libfontconfig1-dev libssl-dev pkg-config rustup \
-    libdbus-1-dev libgtk-3-dev \
-  '
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    --no-install-recommends --fix-missing \
+      libfontconfig1-dev libssl-dev libdbus-1-dev libgtk-3-dev pkg-config rustup
 
 [linux]
 linux_debian_set_deps_cc_mac:
@@ -34,7 +33,9 @@ linux_debian_set_deps_cc_mac:
 [linux]
 linux_debian_set_deps_cc_win:
   #!/usr/bin/env sh
-  sudo su -c 'yes | apt install gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64'
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    --no-install-recommends --fix-missing \
+      gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64
 
 [linux]
 linux_fedora_set_deps:
