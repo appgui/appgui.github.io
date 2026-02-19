@@ -4,6 +4,7 @@ variables:
 # Ensure GITHUB_REPO and GITHUB_TOKEN are set in CI/CD Settings
 #   GITHUB_REPO - xPlatform repo address
 #   GITHUB_TOKEN - fine-grained token with access to GITHUB_REPO (Actions: rw, Contents: rw, Metadata)
+# (if the above variables are set as Protected, they acan only be used with protected tags)
 
 stages:
   - trigger-github-build
