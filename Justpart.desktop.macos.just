@@ -18,7 +18,7 @@ cc_to_mac_set_deps TARGET:
 
 [macos]
 macos_set_deps:
-  #!bin/sh
+  #!/usr/bin/env sh
   brew install dprint imagemagick ninja
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
   rustup toolchain install stable

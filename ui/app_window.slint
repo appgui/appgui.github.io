@@ -4,171 +4,284 @@ import { ThemeSelector } from "components/theme_selector.slint";
 import { FullscreenToggle } from "components/fullscreen_toggle.slint";
 
 export component AppWindow inherits Window {
-  title: "xPlatform";
-  icon: @image-url("../assets/icon.svg");
-  background: root.bg-primary;
-  preferred-width: 500px;
-  preferred-height: 500px;
-  min-width: 500px;
-  min-height: 500px;
+    title: "xPlatform";
+    icon: @image-url("../assets/icon.svg");
+    background: root.bg-primary;
+    preferred-width: 500px;
+    preferred-height: 500px;
+    min-width: 500px;
+    min-height: 500px;
 
-  // Restored to fix compilation in feat_desktop/src/main.rs
+    // Restored to fix compilation in feat_desktop/src/main.rs
   in property <bool> is-mobile: false;
 
-  in-out property <int> theme-mode: 0;
-  in property <bool> system-is-dark: true;
-  in-out property <bool> is-fullscreen: false;
-  in-out property <string> display-value: "—";
-  in-out property <string> display-label: "—";
-  in-out property <string> button-text: "Show Uptime";
+    in-out property <int> theme-mode: 0;
+    in property <bool> system-is-dark: true;
+    in-out property <bool> is-fullscreen: false;
+    in-out property <string> display-value: "—";
+    in-out property <string> display-label: "—";
+    in-out property <string> button-text: "Show Uptime";
 
-  in-out property <length> safe-inset-left: 0px;
-  in-out property <length> safe-inset-top: 0px;
-  in-out property <length> safe-inset-right: 0px;
-  in-out property <length> safe-inset-bottom: 0px;
+    in-out property <length> safe-inset-left: 0px;
+    in-out property <length> safe-inset-top: 0px;
+    in-out property <length> safe-inset-right: 0px;
+    in-out property <length> safe-inset-bottom: 0px;
 
-  callback toggle-mode();
-  callback quit();
-  callback toggle-fullscreen();
-  callback cycle-theme();
-  callback show-notification(string, string);
-  callback update-tray(string);
+    callback toggle-mode();
+    callback quit();
+    callback toggle-fullscreen();
+    callback cycle-theme();
+    callback show-notification(string, string);
+    callback update-tray(string);
 
-  property <length> toolbar-height: 64px;
-  property <bool> is-dark: root.theme-mode == 2 || (root.theme-mode == 0 && root.system-is-dark);
+    property <length> toolbar-height: 64px;
+    property <bool> is-dark: root.theme-mode == 2 || (root.theme-mode == 0 && root.system-is-dark);
 
-  property <color> bg-primary: root.is-dark ? #0f172a : #f8fafc;
-  property <color> bg-secondary: root.is-dark ? #1e293b : #e2e8f0;
-  property <color> text-primary: root.is-dark ? #f1f5f9 : #0f172a;
-  property <color> text-secondary: root.is-dark ? #94a3b8 : #64748b;
-  property <color> text-accent: root.is-dark ? #38bdf8 : #0284c7;
-  property <color> hover-bg: root.is-dark ? #334155 : #cbd5e1;
-  property <color> popup-bg: root.is-dark ? #1e293b : #ffffff;
+    property <color> bg-primary: root.is-dark ? #0f172a : #f8fafc;
+    property <color> bg-secondary: root.is-dark ? #1e293b : #e2e8f0;
+    property <color> text-primary: root.is-dark ? #f1f5f9 : #0f172a;
+    property <color> text-secondary: root.is-dark ? #94a3b8 : #64748b;
+    property <color> text-accent: root.is-dark ? #38bdf8 : #0284c7;
+    property <color> hover-bg: root.is-dark ? #334155 : #cbd5e1;
+    property <color> popup-bg: root.is-dark ? #1e293b : #ffffff;
 
-  VerticalLayout {
-    padding-top: root.safe-inset-top;
-    padding-left: root.safe-inset-left;
-    padding-right: root.safe-inset-right;
+    VerticalLayout {
+        padding-top: root.safe-inset-top;
+        padding-left: root.safe-inset-left;
+        padding-right: root.safe-inset-right;
 
-    Rectangle {
-      vertical-stretch: 1;
-      VerticalLayout {
-        padding: 32px;
-        spacing: 32px;
-        alignment: center;
-        VerticalLayout {
-          spacing: 6px;
-          Text { text: root.display-value; font-size: 56px; color: root.text-accent; horizontal-alignment: center; }
-          Text { text: root.display-label; font-size: 18px; color: root.text-secondary; horizontal-alignment: center; }
-        }
-        CustomToggleButton {
-          text: root.button-text;
-          is-dark: root.is-dark;
-          clicked => { root.toggle-mode(); }
-        }
-      }
-    }
+        Rectangle {
+            vertical-stretch: 1;
+            VerticalLayout {
+                padding: 32px;
+                spacing: 32px;
+                alignment: center;
+                VerticalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: root.display-value;
+                        font-size: 56px;
+                        color: root.text-accent;
+                        horizontal-alignment: center;
+                    }
 
-    Rectangle {
-      height: root.toolbar-height;
-      background: root.bg-secondary;
+                    Text {
+                        text: root.display-label;
+                        font-size: 18px;
+                        color: root.text-secondary;
+                        horizontal-alignment: center;
+                    }
+                }
 
-      HorizontalLayout {
-        padding-left: 24px;
-        padding-right: 24px;
-        alignment: space-between;
-
-        VerticalLayout {
-          alignment: center;
-          ThemeSelector {
-            theme-mode: root.theme-mode;
-            icon-color: root.text-secondary;
-            hover-bg: root.hover-bg;
-            clicked => { theme_popup.show(); }
-          }
-        }
-
-        VerticalLayout {
-          alignment: center;
-          menu_ta := TouchArea {
-            clicked => { submenu_popup.show(); }
-            Rectangle {
-              width: 36px; height: 36px;
-              background: menu_ta.has-hover ? root.hover-bg : transparent;
-              border-radius: 4px;
-              Image {
-                source: @image-url("../assets/icon.svg");
-                width: 24px; height: 24px;
-                colorize: root.text-secondary;
-              }
+                CustomToggleButton {
+                    text: root.button-text;
+                    is-dark: root.is-dark;
+                    clicked => {
+                        root.toggle-mode();
+                    }
+                }
             }
-          }
         }
 
-        VerticalLayout {
-          alignment: center;
-          FullscreenToggle {
-            is-fullscreen: root.is-fullscreen;
-            icon-colour: root.text-secondary;
-            hover-bg: root.hover-bg;
-            clicked => { root.toggle-fullscreen(); }
-          }
+        Rectangle {
+            height: root.toolbar-height;
+            background: root.bg-secondary;
+
+            HorizontalLayout {
+                padding-left: 24px;
+                padding-right: 24px;
+                alignment: space-between;
+
+                VerticalLayout {
+                    alignment: center;
+                    ThemeSelector {
+                        theme-mode: root.theme-mode;
+                        icon-color: root.text-secondary;
+                        hover-bg: root.hover-bg;
+                        clicked => {
+                            theme_popup.show();
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    menu_ta := TouchArea {
+                        clicked => {
+                            submenu_popup.show();
+                        }
+                        Rectangle {
+                            width: 36px;
+                            height: 36px;
+                            background: menu_ta.has-hover ? root.hover-bg : transparent;
+                            border-radius: 4px;
+                            Image {
+                                source: @image-url("../assets/icon.svg");
+                                width: 24px;
+                                height: 24px;
+                                colorize: root.text-secondary;
+                            }
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    FullscreenToggle {
+                        is-fullscreen: root.is-fullscreen;
+                        icon-colour: root.text-secondary;
+                        hover-bg: root.hover-bg;
+                        clicked => {
+                            root.toggle-fullscreen();
+                        }
+                    }
+                }
+            }
         }
-      }
-    }
-    Rectangle { height: root.safe-inset-bottom; background: root.bg-secondary; }
-  }
 
-  theme_popup := PopupWindow {
-    x: 24px; y: root.height - root.toolbar-height - root.safe-inset-bottom - 130px;
-    width: 140px;
-    Rectangle {
-      background: root.popup-bg;
-      border-radius: 6px;
-      VerticalLayout {
-        padding: 4px;
-        TouchArea { height: 36px; clicked => { root.theme-mode = 0; theme_popup.close(); root.cycle-theme(); }
-          Text { text: "Auto"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
-        TouchArea { height: 36px; clicked => { root.theme-mode = 1; theme_popup.close(); root.cycle-theme(); }
-          Text { text: "Light"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
-        TouchArea { height: 36px; clicked => { root.theme-mode = 2; theme_popup.close(); root.cycle-theme(); }
-          Text { text: "Dark"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
-      }
-    }
-  }
-
-  submenu_popup := PopupWindow {
-    x: (root.width - 150px) / 2; y: root.height - root.toolbar-height - root.safe-inset-bottom - 90px;
-    width: 150px;
-    Rectangle {
-      background: root.popup-bg;
-      border-radius: 6px;
-      VerticalLayout {
-        padding: 4px;
-        TouchArea { height: 36px; clicked => { submenu_popup.close(); about_popup.show(); }
-          Text { text: "About"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
-        TouchArea { height: 36px; clicked => { submenu_popup.close(); root.quit(); }
-          Text { text: "Exit"; color: root.text-primary; x: 12px; vertical-alignment: center; } }
-      }
-    }
-  }
-
-  about_popup := PopupWindow {
-    x: (root.width - 220px) / 2; y: (root.height - 240px) / 2;
-    width: 220px;
-    Rectangle {
-      background: root.popup-bg;
-      border-radius: 8px;
-      VerticalLayout {
-        padding: 24px; spacing: 12px;
-        Image { source: @image-url("../assets/icon.svg"); width: 48px; horizontal-alignment: center; }
-        Text { text: "xPlatform"; color: root.text-primary; font-weight: 700; horizontal-alignment: center; }
-        TouchArea { height: 32px; clicked => { about_popup.close(); }
-          Rectangle { background: root.text-accent; border-radius: 4px;
-            Text { text: "Close"; color: white; vertical-alignment: center; horizontal-alignment: center; }
-          }
+        Rectangle {
+            height: root.safe-inset-bottom;
+            background: root.bg-secondary;
         }
-      }
     }
-  }
+
+    theme_popup := PopupWindow {
+        x: 24px;
+        y: root.height - root.toolbar-height - root.safe-inset-bottom - 130px;
+        width: 140px;
+        Rectangle {
+            background: root.popup-bg;
+            border-radius: 6px;
+            VerticalLayout {
+                padding: 4px;
+                TouchArea {
+                    height: 36px;
+                    clicked => {
+                        root.theme-mode = 0;
+                        theme_popup.close();
+                        root.cycle-theme();
+                    }
+                    Text {
+                        text: "Auto";
+                        color: root.text-primary;
+                        x: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+
+                TouchArea {
+                    height: 36px;
+                    clicked => {
+                        root.theme-mode = 1;
+                        theme_popup.close();
+                        root.cycle-theme();
+                    }
+                    Text {
+                        text: "Light";
+                        color: root.text-primary;
+                        x: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+
+                TouchArea {
+                    height: 36px;
+                    clicked => {
+                        root.theme-mode = 2;
+                        theme_popup.close();
+                        root.cycle-theme();
+                    }
+                    Text {
+                        text: "Dark";
+                        color: root.text-primary;
+                        x: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    submenu_popup := PopupWindow {
+        x: (root.width - 150px) / 2;
+        y: root.height - root.toolbar-height - root.safe-inset-bottom - 90px;
+        width: 150px;
+        Rectangle {
+            background: root.popup-bg;
+            border-radius: 6px;
+            VerticalLayout {
+                padding: 4px;
+                TouchArea {
+                    height: 36px;
+                    clicked => {
+                        submenu_popup.close();
+                        about_popup.show();
+                    }
+                    Text {
+                        text: "About";
+                        color: root.text-primary;
+                        x: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+
+                TouchArea {
+                    height: 36px;
+                    clicked => {
+                        submenu_popup.close();
+                        root.quit();
+                    }
+                    Text {
+                        text: "Exit";
+                        color: root.text-primary;
+                        x: 12px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    about_popup := PopupWindow {
+        x: (root.width - 220px) / 2;
+        y: (root.height - 240px) / 2;
+        width: 220px;
+        Rectangle {
+            background: root.popup-bg;
+            border-radius: 8px;
+            VerticalLayout {
+                padding: 24px;
+                spacing: 12px;
+                Image {
+                    source: @image-url("../assets/icon.svg");
+                    width: 48px;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: "xPlatform";
+                    color: root.text-primary;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                }
+
+                TouchArea {
+                    height: 32px;
+                    clicked => {
+                        about_popup.close();
+                    }
+                    Rectangle {
+                        background: root.text-accent;
+                        border-radius: 4px;
+                        Text {
+                            text: "Close";
+                            color: white;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

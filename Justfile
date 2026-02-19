@@ -43,6 +43,7 @@ clean:
 format:
   #!/usr/bin/env sh
   cargo fmt --all
+  slint-lsp format -i ui/**/*.slint
 
 release VARIANT:
   #!/usr/bin/env sh
