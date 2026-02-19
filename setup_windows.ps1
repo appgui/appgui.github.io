@@ -103,7 +103,7 @@ try {
   Write-Host "=== Setup complete ===" -ForegroundColor Cyan
   Write-Host ""
 
-  Pause-Script
+  #Pause-Script
 }
 catch {
   Write-Host "`n=== SETUP FAILED ===" -ForegroundColor Red
