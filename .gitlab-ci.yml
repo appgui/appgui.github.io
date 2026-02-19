@@ -1,28 +1,21 @@
 variables:
   FF_SCRIPT_SECTIONS: 'true'
 
+# Ensure GITHUB_REPO and GITHUB_TOKEN are set in CI/CD Settings
+#   GITHUB_REPO - xPlatform repo address
+#   GITHUB_TOKEN - fine-grained token with access to GITHUB_REPO (Actions: rw, Contents: rw, Metadata)
+
 stages:
   - trigger-github-build
 
 trigger-github-multiplatform-build:
   stage: trigger-github-build
   image: alpine/curl:latest
-  variables:
-    # Ensure GITHUB_REPO and GITHUB_TOKEN are set in your CI/CD Settings
-    #   GITHUB_REPO - xPlatform repo address
-    #   GITHUB_TOKEN - fine-grained token with access to GITHUB_REPO (Actions: rw, Contents: rw, Metadata)
-    GITHUB_REPO: $GITHUB_REPO
-    GITHUB_TOKEN: $GITHUB_TOKEN
   script:
     - TAG=${CI_COMMIT_TAG}
-    - echo "Triggering build for tag $TAG on repo $GITHUB_REPO"
+    - echo "Triggering GitHub Dispatch for tag $TAG..."
     - |
-      # Requesting build by curl POST request to GitHub
-      #   -f (fail) to exit with an error code on 400/500 errors
-      #   -o /dev/null to not print the empty success body
-      #   -w "%{http_code}" to capture the status code
-      
-      HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+      HTTP_STATUS=$(curl -s -X POST \
         -H "Accept: application/vnd.github.v3+json" \
         -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
@@ -34,8 +27,23 @@ trigger-github-multiplatform-build:
             \"gitlab_repo\": \"$CI_REPOSITORY_URL\",
             \"gitlab_commit\": \"$CI_COMMIT_SHA\"
           }
-        }")
+        }" \
+        -o response.json \
+        -w "%{http_code}")
 
+    - |
+      echo "------------------------------------------"
+      echo "HTTP Status: $HTTP_STATUS"
+
+      # GitHub returns an empty body on 204 (Success)
+      # If there is a body (Errors like 401, 404, 422), print it
+      if [ -s response.json ]; then
+        echo "Response Message:"
+        cat response.json
+      else
+        echo "Response Body: (Empty)"
+      fi
+      echo "------------------------------------------"
     - |
       if [ "$HTTP_STATUS" -eq 204 ]; then
         echo '[DONE] Trigger sent successfully to GitHub (Status: 204).'
