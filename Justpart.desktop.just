@@ -44,6 +44,7 @@ desktop_set_tools:
     --git https://github.com/burtonageo/cargo-bundle \
     --branch master \
       cargo-bundle
+  cargo install slint-lsp --no-default-features --features backend-winit,renderer-femtovg,renderer-skia
 
 desktop_build *ARGS:
   #!/usr/bin/env sh
