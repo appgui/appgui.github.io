@@ -46,16 +46,33 @@ JAVA_HOME := join(_home, _android_jdk_dir, _jdk_dir)
 ANDROID_NDK_HOME := join(ANDROID_HOME, 'ndk', _ndk_version)
 
 
+_android_set:
+  #!/usr/bin/env sh
+  cd ./feat_android
+  # if [ ! -f ./Cargo.toml ]; then
+    cp -f ./Cargo.base.toml ./Cargo.toml
+  # fi
+
+  if [ ! -d ./target ] \
+  && [ ! -L ./target ]; then
+    ln -sf ../target ./target
+  fi
+  if [ ! -d ./res ]; then
+    just android_icons_make
+  fi
+
 android_setup_compiler:
   #!/usr/bin/env sh
-  command -v rustup || sudo dnf install rustup
-  rustup target add {{ _android_target }} || rustup-init -t {{ _android_target }} -y
+  command -v rustup \
+  || sudo dnf install rustup
+  rustup target add {{ _android_target }} \
+  || rustup-init -t {{ _android_target }} -y
   cargo install cargo-apk2 cargo-ndk
   echo '[DONE] Rust targets and cargo-ndk installed'
 
 android_setup_sdk_compat: # allow running Android SDK (x86_64) on ARM64 host
   #!/usr/bin/env sh
-  if [ '{{_is_amd64}}' = '0' ]; then
+  if [ '{{_is_amd64}}' = '0' ]; then # Android SDK is amd64
     sudo sh -c '\
       dnf install qemu-user-static systemd-udev; \
       yes | dnf --installroot=/opt/x86_64-root --forcearch=x86_64 install \
@@ -79,7 +96,7 @@ android_analyse_apk APK="":
   APKANALYSER="${CMDLINE_TOOLS}/bin/apkanalyzer"
 
   if [ -z "{{APK}}" ]; then
-    APK="./feat_mobile/target/release/apk/{{_app_name_mobile}}.apk"
+    APK="./feat_android/target/release/apk/{{_app_name_mobile}}.apk"
   else
     APK="{{APK}}"
   fi
@@ -98,11 +115,13 @@ android_setup_sdk:
     . ./.env
   fi
 
-  mkdir -p "${ANDROID_HOME}" || true
+  mkdir -p "${ANDROID_HOME}" \
+  || true
 
   if [ ! -f "${SDKMANAGER}" ]; then
     echo 'Installing Android SDK command-line tools...'
-    mkdir -p "${CMDLINE_TOOLS}" || true
+    mkdir -p "${CMDLINE_TOOLS}" \
+    || true
     cd /tmp
     wget -q '{{ _android_sdk_cmdline_tools_url }}' -O cmdline-tools.zip
     unzip -q cmdline-tools.zip -d "${CMDLINE_TOOLS}"
@@ -115,9 +134,13 @@ android_setup_sdk:
 
   export ANDROID_HOME ANDROID_SDK_ROOT="${ANDROID_HOME}"
 
-  yes | "${SDKMANAGER}" --licenses || true
-  "${SDKMANAGER}" 'platform-tools' 'build-tools;{{ _android_build_tools_version }}' \
-                  'platforms;{{ _android_platform }}' 'ndk;{{ _ndk_version }}'
+  yes | "${SDKMANAGER}" --licenses \
+  || true
+  "${SDKMANAGER}" \
+    'platform-tools' \
+    'build-tools;{{ _android_build_tools_version }}' \
+    'platforms;{{ _android_platform }}' \
+    'ndk;{{ _ndk_version }}'
 
   echo '[DONE] Android SDK/NDK installed'
 
@@ -125,7 +148,8 @@ android_setup_jdk:
   #!/usr/bin/env sh
   set -eu
 
-  mkdir -p ~/{{ _android_jdk_dir }} || true
+  mkdir -p ~/{{ _android_jdk_dir }} \
+  || true
   cd ~/{{ _android_jdk_dir }}
 
   if [ -d '{{ _jdk_dir }}' ]; then
@@ -155,7 +179,7 @@ android_setup_keystore:
   #!/usr/bin/env sh
   echo '[INFO] Setting up Android keystore...'
 
-  cd ./feat_mobile
+  cd ./feat_android
   set -e
   if [ -f ../.env ]; then
     . ../.env
@@ -168,10 +192,13 @@ android_setup_keystore:
 
   # Set defaults or generate random values
   : "${KEY_ALIAS:=release}"
-  : "${KEY_PASSWORD:=$(openssl rand -base64 32 2>/dev/null || echo 'changeit')}"
+  : "${KEY_PASSWORD:=$(openssl rand -base64 32 2>/dev/null \
+  || echo 'changeit')}"
 
-  rm ./release.keystore 2> /dev/null || true
-  rm ./secret.env 2> /dev/null || true
+  rm ./release.keystore 2> /dev/null \
+  || true
+  rm ./secret.env 2> /dev/null \
+  || true
 
   echo """
   [package.metadata.android.signing.release]
@@ -211,7 +238,8 @@ android_setup_cargo_config:
   #!/usr/bin/env sh
   set -eu
 
-  mkdir -p ./.cargo 2> /dev/null || true
+  mkdir -p ./.cargo 2> /dev/null \
+  || true
 
   cat > ./.cargo/config.toml << 'EOF'
 
@@ -240,54 +268,56 @@ android_icons_make:
   #!/usr/bin/env sh
   set -e
 
-  cd ./assets
+  ROOT="$(pwd)"
+  ASSETS="$ROOT/assets"
+  RES="$ROOT/feat_android/res"
+  export MAGICK_CONFIGURE_PATH="$ROOT/config/magick"
+
   echo '[INFO] Generating Android icon resources...'
 
   # Check if source icon exists
-  if [ ! -f ./icon.png ]; then
-    magick -background transparent -density 1200 ./icon.svg \
+  if [ ! -f "$ASSETS/icon.png" ]; then
+    magick -background transparent -density 1200 "$ASSETS/icon.svg" \
       -resize 512x512 \
-        ./icon.png
+        "$ASSETS/icon.png"
   fi
 
-  mkdir -p ../feat_mobile/res/mipmap
-  mkdir -p ../feat_mobile/res/mipmap-mdpi
-  mkdir -p ../feat_mobile/res/mipmap-hdpi
-  mkdir -p ../feat_mobile/res/mipmap-xhdpi
-  mkdir -p ../feat_mobile/res/mipmap-xxhdpi
-  mkdir -p ../feat_mobile/res/mipmap-xxxhdpi
-  mkdir -p ../feat_mobile/res/drawable
+  mkdir -p "$RES/mipmap"
+  mkdir -p "$RES/mipmap-mdpi"
+  mkdir -p "$RES/mipmap-hdpi"
+  mkdir -p "$RES/mipmap-xhdpi"
+  mkdir -p "$RES/mipmap-xxhdpi"
+  mkdir -p "$RES/mipmap-xxxhdpi"
+  mkdir -p "$RES/drawable"
 
-  cp ./icon.png \
-    ../feat_mobile/res/mipmap/ic_launcher.png
-  magick ./icon.png \
+  cp "$ASSETS/icon.png" \
+    "$RES/mipmap/ic_launcher.png"
+  magick "$ASSETS/icon.png" \
     -resize 48x48 \
-      ../feat_mobile/res/mipmap-mdpi/ic_launcher.png
-  magick ./icon.png \
+      "$RES/mipmap-mdpi/ic_launcher.png"
+  magick "$ASSETS/icon.png" \
     -resize 72x72 \
-      ../feat_mobile/res/mipmap-hdpi/ic_launcher.png
-  magick ./icon.png \
+      "$RES/mipmap-hdpi/ic_launcher.png"
+  magick "$ASSETS/icon.png" \
     -resize 96x96 \
-      ../feat_mobile/res/mipmap-xhdpi/ic_launcher.png
-  magick ./icon.png \
+      "$RES/mipmap-xhdpi/ic_launcher.png"
+  magick "$ASSETS/icon.png" \
     -resize 144x144 \
-      ../feat_mobile/res/mipmap-xxhdpi/ic_launcher.png
-  magick ./icon.png \
+      "$RES/mipmap-xxhdpi/ic_launcher.png"
+  magick "$ASSETS/icon.png" \
     -resize 192x192 \
-      ../feat_mobile/res/mipmap-xxxhdpi/ic_launcher.png
+      "$RES/mipmap-xxxhdpi/ic_launcher.png"
 
-  # This creates a white version of icon shape for the status bar
-  magick ./icon.png \
+  # White version of icon shape for the status bar
+  magick "$ASSETS/icon.png" \
     -alpha off -fill white \
-    -colorize 100% ./icon.png \
+    -colorize 100% "$ASSETS/icon.png" \
     -compose CopyOpacity -composite \
-      ../feat_mobile/res/drawable/ic_notification.png
+      "$RES/drawable/ic_notification.png"
 
   echo '[DONE] Android icons generated:'
-  ls -lh \
-    ../feat_mobile/res/mipmap-*/ic_launcher.png
-  ls -lh \
-    ../feat_mobile/res/drawable/ic_notification.png
+  ls -lh "$RES/mipmap-"*/ic_launcher.png
+  ls -lh "$RES/drawable/ic_notification.png"
 
 android_setup:
   #!/usr/bin/env sh
@@ -311,14 +341,15 @@ android_run *ARGS:
 
 android ACTION='' *ARGS:
   #!/usr/bin/env sh
-  cd ./feat_mobile
+  cd ./feat_android
   set -e
   if [ -f ../.env ]; then
     . ../.env
   fi
   export PATH="${JAVA_HOME}/bin:${PATH}"
 
-  if [ ! -d "${ANDROID_NDK_HOME}" ] || [ ! -d "${JAVA_HOME}" ]; then
+  if [ ! -d "${ANDROID_NDK_HOME}" ] \
+  || [ ! -d "${JAVA_HOME}" ]; then
     echo '[INFO] Run setup first: just android_setup'
     exit 1
   fi
@@ -332,12 +363,12 @@ android ACTION='' *ARGS:
     echo '[INFO] Android icons not found, generating...'
     cd ..
     just android_icons_make
-    cd ./feat_mobile
+    cd ./feat_android
   fi
 
-  # Copy AndroidManifest.xml if it exists in feat_mobile
-  # if [ -f ../feat_mobile/AndroidManifest.xml ]; then
-  #   cp ../feat_mobile/AndroidManifest.xml ../feat_mobile/AndroidManifest.xml
+  # Copy AndroidManifest.xml if it exists in feat_android
+  # if [ -f ../feat_android/AndroidManifest.xml ]; then
+  #   cp ../feat_android/AndroidManifest.xml ../feat_android/AndroidManifest.xml
   # fi
 
   echo "$(cat ./Cargo.base.toml)" > ./Cargo.toml
@@ -362,4 +393,4 @@ android ACTION='' *ARGS:
         echo 'run                             # natively on an attached device'
       fi
   esac
-  # git update-index --skip-worktree ../feat_mobile/Cargo.release.toml
+  # git update-index --skip-worktree ../feat_android/Cargo.release.toml

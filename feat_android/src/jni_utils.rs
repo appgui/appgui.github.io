@@ -1,7 +1,14 @@
 use android_activity::AndroidApp;
 use jni::{JavaVM, objects::JObject};
 
-pub fn try_jni_call<F, R>(app: &AndroidApp, mut operation: F) -> Option<R>
+pub fn try_jni_call<F, R>(app: &AndroidApp, operation: F) -> Option<R>
+where
+  F: FnMut(&mut jni::JNIEnv, JObject) -> Result<R, jni::errors::Error>,
+{
+  try_jni_call_labeled(app, "unknown", operation)
+}
+
+pub fn try_jni_call_labeled<F, R>(app: &AndroidApp, label: &str, mut operation: F) -> Option<R>
 where
   F: FnMut(&mut jni::JNIEnv, JObject) -> Result<R, jni::errors::Error>,
 {
@@ -20,10 +27,9 @@ where
   match operation(&mut env, activity) {
     Ok(result) => Some(result),
     Err(e) => {
-      // CRITICAL: Print the Java exception stack trace to Logcat
       let _ = env.exception_describe();
       let _ = env.exception_clear();
-      println!("❌ Rust: JNI Call Failed: {:?}", e);
+      println!("❌ Rust: JNI Call Failed [{}]: {:?}", label, e);
       None
     }
   }

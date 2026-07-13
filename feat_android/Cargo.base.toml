@@ -1,5 +1,5 @@
 [package]
-name = "feat_mobile"
+name = "feat_android"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
@@ -33,6 +33,9 @@ min_sdk_version = 34
 target_sdk_version = 35
 
 [[package.metadata.android.uses_permission]]
+name = "android.permission.INTERNET"
+
+[[package.metadata.android.uses_permission]]
 name = "android.permission.FOREGROUND_SERVICE"
 
 [[package.metadata.android.uses_permission]]
@@ -54,9 +57,11 @@ foreground_service_type = "dataSync"
 exported = false
 
 [[package.metadata.android.application.activity]]
-name = "android.app.NativeActivity"
+name = ".MainActivity"
 label = "xPlatform"
 launch_mode = "singleTask"
+resizeable_activity = true
+config_changes = "orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout|density"
 
 [[package.metadata.android.application.activity.meta_data]]
 name = "android.app.lib_name"

@@ -1,0 +1,59 @@
+import { LineEdit } from "std-widgets.slint";
+import { CustomToggleButton } from "custom_button.slint";
+
+export component LoginView inherits Rectangle {
+    in property <bool> is-dark: true;
+    in-out property <string> server-url: "https://startui.ddns.net/api";
+    callback connect();
+    callback cancel();
+
+    VerticalLayout {
+        padding: 40px;
+        spacing: 32px;
+        alignment: center;
+
+        Text {
+            text: "Secret Chat Login";
+            font-size: 28px;
+            color: root.is-dark ? #38bdf8 : #0284c7;
+            horizontal-alignment: center;
+            font-weight: 700;
+        }
+
+        server-field := LineEdit {
+            text <=> root.server-url;
+            placeholder-text: "https://startui.ddns.net/api";
+            width: 360px;
+        }
+
+        CustomToggleButton {
+            text: "Connect Anonymously";
+            is-dark: root.is-dark;
+            clicked => {
+                root.connect();
+            }
+            width: 360px;
+        }
+
+        Rectangle {
+        // Cancel button (returns to normal view)
+            width: 360px;
+            height: 48px;
+            border-radius: 8px;
+            background: root.is-dark ? #475569 : #e2e8f0;
+
+            TouchArea {
+                clicked => {
+                    root.cancel();
+                }
+                Text {
+                    text: "Cancel / Back";
+                    color: root.is-dark ? #cbd5e1 : #475569;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    font-size: 18px;
+                }
+            }
+        }
+    }
+}

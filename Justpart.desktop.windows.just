@@ -2,22 +2,45 @@
 
 _app_name_windows := "xplatform"
 _target_win_amd64 := 'x86_64-pc-windows-gnu'
-_target_win_arm64 := 'aarch64-pc-windows-msvc' # testme
+_target_win_amd64_proprietary := 'x86_64-pc-windows-msvc'
+_target_win_arm64 := 'aarch64-pc-windows-msvc' # Windows on ARM, not tested
+
+_is_supported_target_win TARGET:
+  #!/usr/bin/env sh
+  if [ '{{TARGET}}' != '{{_target_win_amd64}}' ] \
+  || [ '{{TARGET}}' != '{{_target_win_amd64_proprietary}}' ] || \
+     [ '{{TARGET}}' != '{{_target_win_arm64}}' ]; then
+    echo '[FAIL] "{{TARGET}}" is not a supported target'
+    exit 1
+  fi
 
 [linux]
 cc_to_win_set_deps TARGET:
   #!/usr/bin/env sh
-  just linux_debian_set_deps_cc_win || just linux_fedora_set_deps_cc_win
+  just _is_supported_target_win {{TARGET}} \
+  || exit 1
+
   if [ '{{TARGET}}' = '{{_target_win_arm64}}' ]; then
     cargo install cargo-xwin
   fi
-  rustup target add {{TARGET}}
+  (
+    just linux_debian_set_deps_cc_win \
+    || just linux_fedora_set_deps_cc_win
+  ) \
+  && rustup target add {{TARGET}}
 
 [macos]
 cc_to_win_set_deps TARGET:
   #!/usr/bin/env sh
-  just macos_set_deps_cc_win
-  rustup target add {{TARGET}}
+  just _is_supported_target_win {{TARGET}} \
+  || exit 1
+
+  if [ '{{TARGET}}' = '{{_target_win_arm64}}' ]; then
+    cargo install cargo-xwin
+  fi
+
+  just macos_set_deps_cc_win \
+  && rustup target add {{TARGET}}
 
 [windows]
 windows_set_deps:
@@ -30,7 +53,15 @@ windows_set_deps:
   # setx /M PATH "%PATH%;$magickDir"
   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$magickDir", "Machine")
 
-  & "C:\\Program Files\\Git\\bin\\bash.exe" -c 'just desktop_set_tools'
+  & "C:\\Program Files\\Git\\bin\\bash.exe" -c 'just desktop_set_tools_build'
+
+[windows]
+desktop_set_tools_dev:
+  #!pwsh
+  cargo install \
+    slint-lsp \
+      --no-default-features \
+      --features backend-winit,renderer-skia
 
   # Check if dprint is running
   $dprintProcess = Get-Process -Name "dprint" -ErrorAction SilentlyContinue
@@ -57,14 +88,16 @@ windows_run *ARGS:
 
 windows ACTION='' TARGET='native' *ARGS:
   #!/usr/bin/env sh
-  if [ '{{TARGET}}' = 'native' ] || \
-    [ '{{TARGET}}' = '{{_target_win_amd64}}' ] || \
-    [ '{{TARGET}}' = '{{_target_win_arm64}}' ]; then
-    echo '[INFO] Target: {{TARGET}}'
+  OUR_PLATFORM="$(just native)"
+  if [ '{{TARGET}}' = 'native' ]; then
+    export TARGET="${OUR_PLATFORM}"
   else
-    echo '[FAIL] "{{TARGET}}" is not a supported target'
-    exit 1
+    echo "[INFO] Cross-compilation: ${OUR_PLATFORM} >> {{TARGET}}"
+    just cc_to_win_set_deps {{TARGET}} || exit 1
+    export TARGET={{TARGET}}
   fi
+
+  echo "[INFO] Target: ${TARGET}"
 
   just _workspace_set
   if [ ! -f ./assets/icon.ico ]; then
@@ -77,14 +110,6 @@ windows ACTION='' TARGET='native' *ARGS:
     . ../.env
   fi
 
-  OUR_PLATFORM="$(just native)"
-
-  if [ '{{TARGET}}' = 'native' ] || [ "${OUR_PLATFORM}" = '{{TARGET}}' ]; then
-    export TARGET="${OUR_PLATFORM}"
-  else
-    just cc_to_win_set_deps {{TARGET}}
-  fi
-
   case '{{ACTION}}' in
     build)
       echo "[INFO] Preparing Windows executable [${TARGET}]"
@@ -93,7 +118,8 @@ windows ACTION='' TARGET='native' *ARGS:
       echo '[DONE]'
       ;;
     *)
-      if [ '{{ACTION}}' = 'run' ] && [ "${OUR_PLATFORM}" = "${TARGET}" ]; then
+      if [ '{{ACTION}}' = 'run' ] \
+      && [ "${OUR_PLATFORM}" = "${TARGET}" ]; then
         cargo run {{ARGS}}
         exit 0
       fi

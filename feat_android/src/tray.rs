@@ -178,7 +178,7 @@ where
       .unwrap_or(false);
 
       if !service_alive && !STOP_REQUESTED.load(Ordering::SeqCst) {
-        println!("🔔 Service stopped via Stop button, triggering app quit");
+        println!("[DONE] Service stopped via Stop button, triggering app quit");
         STOP_REQUESTED.store(true, Ordering::SeqCst);
         TRAY_ACTIVE.store(false, Ordering::SeqCst);
         on_stop();

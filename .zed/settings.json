@@ -30,5 +30,12 @@
     "metrics": false,
   },
   "use_autoclose": false,
-  "use_auto_surround": false
+  "use_auto_surround": false,
+  "rust-analyzer": {
+    "cargo": {
+      "extraEnv": {
+        "SLINT_INCLUDE_GENERATED": "."
+      }
+    }
+  }
 }
