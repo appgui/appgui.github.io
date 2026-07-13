@@ -5,17 +5,31 @@ _app_name_linux := "xPlatform"
 _target_lin_amd64 := "x86_64-unknown-linux-gnu"
 _target_lin_arm64 := "aarch64-unknown-linux-gnu"
 
+_is_supported_target_lin TARGET:
+  #!/usr/bin/env sh
+  if [ '{{TARGET}}' != '{{_target_lin_amd64}}' ] \
+  || [ '{{TARGET}}' != '{{_target_lin_arm64}}' ]; then
+    echo '[FAIL] "{{TARGET}}" is not a supported target'
+    exit 1
+  fi
+
 [macos]
 cc_to_lin_set_deps TARGET:
   #!/usr/bin/env sh
-  just macos_set_deps_cc_lin {{TARGET}}
-  rustup target add {{TARGET}}
+  just _is_supported_target_lin {{TARGET}} \
+  || exit 1
+
+  just macos_set_deps_cc_lin {{TARGET}} \
+  && rustup target add {{TARGET}}
 
 [windows]
 cc_to_lin_set_deps TARGET:
   #!/usr/bin/env sh
-  just windows_set_deps_cc_lin {{TARGET}}
-  rustup target add {{TARGET}}
+  just _is_supported_target_lin {{TARGET}} \
+  || exit 1
+
+  just windows_set_deps_cc_lin {{TARGET}} \
+  && rustup target add {{TARGET}}
 
 [linux]
 linux_debian_set_deps:
@@ -23,6 +37,19 @@ linux_debian_set_deps:
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     --no-install-recommends --fix-missing \
       libfontconfig1-dev libssl-dev libdbus-1-dev libgtk-3-dev pkg-config rustup
+  cargo install \
+    --git https://github.com/burtonageo/cargo-bundle \
+    --branch master \
+      cargo-bundle
+
+[linux]
+desktop_set_tools_dev:
+  #!/usr/bin/env sh
+  cargo install \
+    slint-lsp \
+      --no-default-features \
+      --features backend-winit,renderer-femtovg,renderer-skia
+  curl -fsSL https://dprint.dev/install.sh | sh
 
 [linux]
 linux_debian_set_deps_cc_mac:
@@ -42,6 +69,20 @@ linux_fedora_set_deps:
   #!/usr/bin/env sh
   sudo su -c 'yes | dnf install \
     fontconfig-devel openssl-devel pkg-config rustup'
+  cargo install \
+    --git https://github.com/burtonageo/cargo-bundle \
+    --branch master \
+      cargo-bundle
+
+[linux]
+linux_opensuse_set_deps:
+  #!/usr/bin/env sh
+  sudo su -c 'zypper install -y \
+    fontconfig-devel openssl-devel pkg-config rustup squashfs'
+  cargo install \
+    --git https://github.com/burtonageo/cargo-bundle \
+    --branch master \
+      cargo-bundle
 
 [linux]
 linux_fedora_set_deps_cc_mac:
@@ -66,14 +107,17 @@ linux_run *ARGS:
 
 linux ACTION='' TARGET='native' *ARGS:
   #!/usr/bin/env sh
-  if [ '{{TARGET}}' = 'native' ] || \
-    [ '{{TARGET}}' = '{{_target_lin_amd64}}' ] || \
-    [ '{{TARGET}}' = '{{_target_lin_arm64}}' ]; then
-    echo '[INFO] Target: {{TARGET}}'
+  OUR_PLATFORM="$(just native)"
+  if [ '{{TARGET}}' = 'native' ]; then
+    export TARGET="${OUR_PLATFORM}"
   else
-    echo '[FAIL] "{{TARGET}}" is not a supported target'
-    exit 1
+    echo "[INFO] Cross-compilation: ${OUR_PLATFORM} >> {{TARGET}}"
+    just cc_to_lin_set_deps {{TARGET}} \
+    || exit 1
+    export TARGET={{TARGET}}
   fi
+
+  echo "[INFO] Target: ${TARGET}"
 
   just _workspace_set
   if [ ! -f ./assets/icon.ico ]; then
@@ -86,19 +130,12 @@ linux ACTION='' TARGET='native' *ARGS:
     . ../.env
   fi
 
-  OUR_PLATFORM="$(just native)"
-
-  if [ '{{TARGET}}' = 'native' ] || [ "${OUR_PLATFORM}" = '{{TARGET}}' ]; then
-    export TARGET="${OUR_PLATFORM}"
-  else
-    just cc_to_lin_set_deps ${TARGET}
-  fi
-
   case '{{ACTION}}' in
     build)
       echo "[INFO] Attempting to build Linux installers and appimage [${TARGET}]"
       # https://github.com/burtonageo/cargo-bundle
-      cargo bundle -p feat_desktop --target ${TARGET} -r {{ARGS}} && {
+      cargo bundle -p feat_desktop --target ${TARGET} -r {{ARGS}} \
+      && {
         echo '[DONE]'
         exit 0
       }
@@ -109,7 +146,8 @@ linux ACTION='' TARGET='native' *ARGS:
       echo '[DONE]'
       ;;
     *)
-      if [ '{{ACTION}}' = 'run' ] && [ "${OUR_PLATFORM}" = "${TARGET}" ]; then
+      if [ '{{ACTION}}' = 'run' ] \
+      && [ "${OUR_PLATFORM}" = "${TARGET}" ]; then
         cargo run {{ARGS}}
         exit 0
       fi

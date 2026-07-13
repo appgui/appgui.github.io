@@ -1,7 +1,7 @@
-import { ScrollView } from "std-widgets.slint";
-import { CustomToggleButton } from "components/custom_button.slint";
+import { ScrollView, LineEdit, ComboBox } from "std-widgets.slint";
 import { ThemeSelector } from "components/theme_selector.slint";
 import { FullscreenToggle } from "components/fullscreen_toggle.slint";
+import { LoginView } from "components/login_view.slint";
 
 export component AppWindow inherits Window {
     title: "xPlatform";
@@ -12,27 +12,47 @@ export component AppWindow inherits Window {
     min-width: 500px;
     min-height: 500px;
 
-    // Restored to fix compilation in feat_desktop/src/main.rs
-  in property <bool> is-mobile: false;
+    in property <bool> is-mobile: false;
+    // Set to false on web/WASM targets where local sysinfo is unavailable.
+    in property <bool> has-local-source: true;
 
     in-out property <int> theme-mode: 0;
     in property <bool> system-is-dark: true;
     in-out property <bool> is-fullscreen: false;
     in-out property <string> display-value: "—";
     in-out property <string> display-label: "—";
-    in-out property <string> button-text: "Show Uptime";
+    // 0 = Uptime, 1 = CPU Temperature, 2 = Free RAM
+    in-out property <int> display-mode: 0;
+    // Always holds uptime for the active source — used by tray/notification.
+    in-out property <string> tray-text: "—";
+
+    // Data source configuration — committed values (persisted to Rust).
+    in-out property <int> data-source-mode: 0;     // 0 = local, 1 = remote
+    in-out property <string> data-source-url: "";
+    // Pending edits shown inside the popup before Save is confirmed.
+    in-out property <int> pending-source-mode: 0;
+    in-out property <string> pending-source-url: "";
+
+    property <bool> settings-open: false;
 
     in-out property <length> safe-inset-left: 0px;
     in-out property <length> safe-inset-top: 0px;
     in-out property <length> safe-inset-right: 0px;
     in-out property <length> safe-inset-bottom: 0px;
 
-    callback toggle-mode();
+    // ── App mode: 0 = normal (RAM/Uptime), 1 = secret login ──
+  in-out property <int> app-mode: 0;
+
+    callback set-display-mode(int);
     callback quit();
     callback toggle-fullscreen();
     callback cycle-theme();
     callback show-notification(string, string);
     callback update-tray(string);
+    callback connect-anonymous(string);
+    callback login-success();
+    // Fired when user confirms a data source change in the popup.
+    callback save-data-source(int, string);
 
     property <length> toolbar-height: 64px;
     property <bool> is-dark: root.theme-mode == 2 || (root.theme-mode == 0 && root.system-is-dark);
@@ -52,38 +72,56 @@ export component AppWindow inherits Window {
 
         Rectangle {
             vertical-stretch: 1;
-            VerticalLayout {
+
+            // NORMAL MODE
+      if (root.app-mode == 0): normal_view := VerticalLayout {
                 padding: 32px;
                 spacing: 32px;
                 alignment: center;
+
                 VerticalLayout {
                     spacing: 6px;
                     Text {
                         text: root.display-value;
-                        font-size: 56px;
+                        font-size: 44px;
                         color: root.text-accent;
                         horizontal-alignment: center;
                     }
 
                     Text {
-                        text: root.display-label;
+                        text: root.data-source-mode == 0 ? "Local" : "Remote";
                         font-size: 18px;
                         color: root.text-secondary;
                         horizontal-alignment: center;
                     }
                 }
 
-                CustomToggleButton {
-                    text: root.button-text;
-                    is-dark: root.is-dark;
-                    clicked => {
-                        root.toggle-mode();
+                ComboBox {
+                    model: ["Uptime", "CPU Temperature", "Free RAM"];
+                    current-index: root.display-mode;
+                    selected(value) => {
+                        root.display-mode = self.current-index;
+                        root.set-display-mode(self.current-index);
                     }
+                }
+            }
+
+            // SECRET LOGIN MODE
+      if (root.app-mode == 1): login_view := LoginView {
+                width: 100%;
+                height: 100%;
+                is-dark: root.is-dark;
+                connect => {
+                    root.connect-anonymous(self.server-url);
+                }
+                cancel => {
+                    root.app-mode = 0;
                 }
             }
         }
 
-        Rectangle {
+        // Toolbar (always visible)
+    Rectangle {
             height: root.toolbar-height;
             background: root.bg-secondary;
 
@@ -145,7 +183,8 @@ export component AppWindow inherits Window {
         }
     }
 
-    theme_popup := PopupWindow {
+    // ── Popups ──
+  theme_popup := PopupWindow {
         x: 24px;
         y: root.height - root.toolbar-height - root.safe-inset-bottom - 130px;
         width: 140px;
@@ -211,77 +250,164 @@ export component AppWindow inherits Window {
             border-radius: 6px;
             VerticalLayout {
                 padding: 4px;
-                TouchArea {
+                settings_item := TouchArea {
                     height: 36px;
                     clicked => {
                         submenu_popup.close();
-                        about_popup.show();
+                        root.pending-source-mode = root.data-source-mode;
+                        root.pending-source-url = root.data-source-url;
+                        root.settings-open = true;
                     }
-                    Text {
-                        text: "About";
-                        color: root.text-primary;
-                        x: 12px;
-                        vertical-alignment: center;
+                    Rectangle {
+                        background: settings_item.has-hover ? root.hover-bg : transparent;
+                        border-radius: 4px;
+                        Text {
+                            text: "Settings";
+                            color: root.text-primary;
+                            x: 12px;
+                            vertical-alignment: center;
+                        }
                     }
                 }
 
-                TouchArea {
+                exit_item := TouchArea {
                     height: 36px;
                     clicked => {
                         submenu_popup.close();
                         root.quit();
                     }
-                    Text {
-                        text: "Exit";
-                        color: root.text-primary;
-                        x: 12px;
-                        vertical-alignment: center;
+                    Rectangle {
+                        background: exit_item.has-hover ? root.hover-bg : transparent;
+                        border-radius: 4px;
+                        Text {
+                            text: "Exit";
+                            color: root.text-primary;
+                            x: 12px;
+                            vertical-alignment: center;
+                        }
                     }
                 }
             }
         }
     }
 
-    about_popup := PopupWindow {
-        x: (root.width - 220px) / 2;
-        y: (root.height - 240px) / 2;
-        width: 220px;
-        Rectangle {
-            background: root.popup-bg;
-            border-radius: 8px;
-            VerticalLayout {
-                padding: 24px;
-                spacing: 12px;
-                Image {
-                    source: @image-url("../assets/icon.svg");
-                    width: 48px;
-                    horizontal-alignment: center;
-                }
+    if root.settings-open: Rectangle {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        background: #00000066;
 
-                Text {
-                    text: "xPlatform";
-                    color: root.text-primary;
-                    font-weight: 700;
-                    horizontal-alignment: center;
-                }
+        // Absorb all clicks outside the card — prevents dismiss and passthrough.
+        TouchArea {
+            width: 100%;
+            height: 100%;
+        }
 
-                TouchArea {
-                    height: 32px;
-                    clicked => {
-                        about_popup.close();
-                    }
-                    Rectangle {
-                        background: root.text-accent;
-                        border-radius: 4px;
+        // Centred card — VerticalLayout determines height from content.
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 300px;
+                    background: root.popup-bg;
+                    border-radius: 8px;
+
+                    VerticalLayout {
+                        padding: 20px;
+                        spacing: 12px;
+
                         Text {
-                            text: "Close";
-                            color: white;
-                            vertical-alignment: center;
+                            text: "Settings";
+                            color: root.text-primary;
+                            font-size: 14px;
+                            font-weight: 700;
                             horizontal-alignment: center;
+                        }
+
+                        ComboBox {
+                            model: ["Local", "Remote"];
+                            current-index: root.pending-source-mode;
+                            enabled: root.has-local-source;
+                            selected(value) => {
+                                root.pending-source-mode = self.current-index;
+                            }
+                        }
+
+                        if root.pending-source-mode == 0: Rectangle {
+                            height: 32px;
+                            border-radius: 4px;
+                            border-width: 1px;
+                            border-color: root.text-secondary;
+                            background: root.bg-secondary;
+                            Text {
+                                x: 8px;
+                                text: "host";
+                                color: root.text-secondary;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        url-input := LineEdit {
+                            visible: root.pending-source-mode == 1;
+                            height: root.pending-source-mode == 1 ? 32px : 0px;
+                            text: root.pending-source-url;
+                            placeholder-text: "https://...";
+                            edited(t) => {
+                                root.pending-source-url = t;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            height: 36px;
+
+                            TouchArea {
+                                horizontal-stretch: 1;
+                                clicked => {
+                                    root.data-source-mode = root.pending-source-mode;
+                                    root.data-source-url = root.pending-source-url;
+                                    root.save-data-source(root.pending-source-mode, root.pending-source-url);
+                                    root.settings-open = false;
+                                }
+                                Rectangle {
+                                    border-radius: 4px;
+                                    background: root.text-accent;
+                                    Text {
+                                        text: "Save";
+                                        color: white;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+
+                            TouchArea {
+                                horizontal-stretch: 1;
+                                clicked => {
+                                    root.settings-open = false;
+                                }
+                                Rectangle {
+                                    border-radius: 4px;
+                                    background: root.bg-secondary;
+                                    Text {
+                                        text: "Cancel";
+                                        color: root.text-primary;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Called from Rust after successful anonymous login
+  login-success => {
+        root.app-mode = 0;
     }
 }

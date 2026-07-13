@@ -34,15 +34,13 @@ trigger-github-multiplatform-build:
 
     - |
       echo "------------------------------------------"
-      echo "HTTP Status: $HTTP_STATUS"
+      echo "[INFO] HTTP Status: $HTTP_STATUS"
 
       # GitHub returns an empty body on 204 (Success)
       # If there is a body (Errors like 401, 404, 422), print it
       if [ -s response.json ]; then
-        echo "Response Message:"
+        echo "[INFO] Response:"
         cat response.json
-      else
-        echo "Response Body: (Empty)"
       fi
       echo "------------------------------------------"
     - |

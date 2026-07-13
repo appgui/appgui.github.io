@@ -9,9 +9,8 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use crate::fullscreen::{
-  AppState, InsetsState, apply_insets_to_ui, force_orientation_flip, force_view_refresh,
-  get_insets, restore_orientation, simulate_statusbar_swipe, simulate_statusbar_touch,
-  toggle_system_bars,
+  AppState, InsetsState, apply_insets_to_ui, get_insets, simulate_statusbar_swipe,
+  simulate_statusbar_touch, toggle_system_bars,
 };
 use crate::jni_utils::try_jni_call;
 use crate::tray::{
@@ -54,17 +53,24 @@ fn android_main(app: android_activity::AndroidApp) {
   request_notification_permission(&app);
   STOP_REQUESTED.store(false, Ordering::SeqCst);
   TRAY_ACTIVE.store(true, Ordering::SeqCst);
-  start_foreground_service(&app, "Available RAM: …");
+  start_foreground_service(&app, "Starting…");
 
   // Monitor service status (detects Stop button press and triggers quit)
   let ui_weak_for_stop = ui.as_weak();
   monitor_service_for_stop(&app, move || {
     let ui_weak = ui_weak_for_stop.clone();
-    let _ = slint::invoke_from_event_loop(move || {
+    match slint::invoke_from_event_loop(move || {
       if let Some(ui) = ui_weak.upgrade() {
         ui.invoke_quit();
+      } else {
+        std::process::exit(0);
       }
-    });
+    }) {
+      Ok(_) => {}
+      Err(_) => {
+        std::process::exit(0);
+      }
+    }
   });
 
   // ── Insets Monitor ────────────────────────────────────────────────────────
@@ -77,21 +83,21 @@ fn android_main(app: android_activity::AndroidApp) {
     if let Some(current_insets) = get_insets(&app_monitor) {
       let mut app_state = state_monitor.lock().unwrap();
 
-      if !app_state.initialized && current_insets.has_insets() {
-        app_state.base_insets = Some(current_insets);
-        app_state.last_insets = current_insets;
-        app_state.actual_fullscreen = false;
-        app_state.initialized = true;
-        if let Some(ui) = ui_weak_monitor.upgrade() {
-          apply_insets_to_ui(&ui, current_insets, false, &app_monitor);
+      if !app_state.initialized {
+        app_state.ready_ticks = app_state.ready_ticks.saturating_add(1);
+        // Init immediately when system bars produce insets, or after 5 ticks (~500ms)
+        // for freeform mode where bars don't overlay the window (zero insets forever).
+        if current_insets.has_insets() || app_state.ready_ticks >= 5 {
+          app_state.base_insets = Some(current_insets);
+          app_state.last_insets = current_insets;
+          app_state.actual_fullscreen = false;
+          app_state.initialized = true;
+          if let Some(ui) = ui_weak_monitor.upgrade() {
+            apply_insets_to_ui(&ui, current_insets, false, &app_monitor);
+          }
         }
         return;
       }
-
-      if !app_state.initialized {
-        return;
-      }
-
       let detected_fullscreen = !current_insets.has_insets();
       if current_insets != app_state.last_insets
         || detected_fullscreen != app_state.actual_fullscreen
@@ -125,8 +131,7 @@ fn android_main(app: android_activity::AndroidApp) {
         return;
       }
       if let Some(ui) = ui_weak_notif.upgrade() {
-        let ram_text = format!("Available RAM: {}", ui.get_display_value());
-        update_notification(&app_notif, &ram_text);
+        update_notification(&app_notif, &ui.get_tray_text());
       }
     },
   );
@@ -134,7 +139,7 @@ fn android_main(app: android_activity::AndroidApp) {
   // ── Quit Handler ──────────────────────────────────────────────────────────
   let app_quit = app.clone();
   ui.on_quit(move || {
-    println!("🔔 Quit handler called");
+    println!("[INFO] Quit handler called");
     stop_foreground_service(&app_quit);
     std::process::exit(0);
   });
@@ -145,7 +150,7 @@ fn android_main(app: android_activity::AndroidApp) {
   ui.on_toggle_fullscreen({
     let ui_weak = ui.as_weak();
     move || {
-      if let Some(ui) = ui_weak.upgrade() {
+      if let Some(_ui) = ui_weak.upgrade() {
         let mut app_state = state_fs.lock().unwrap();
         if !app_state.initialized {
           return;
@@ -157,34 +162,31 @@ fn android_main(app: android_activity::AndroidApp) {
         drop(app_state);
 
         let app_toggle = app_fs.clone();
-        let ui_weak_toggle = ui.as_weak();
+        let ui_weak_toggle = ui_weak.clone();
 
-        std::thread::spawn(move || {
-          simulate_statusbar_touch(&app_toggle);
-          std::thread::sleep(std::time::Duration::from_millis(100));
+        // InsetsController.hide/show must be called on the main thread.
+        // Dispatch the toggle call here (we are already on the main thread inside
+        // on_toggle_fullscreen), then hand follow-up inset polling to a thread.
+        simulate_statusbar_touch(&app_toggle);
 
-          let mut success = false;
-          for _ in 0..5 {
-            if toggle_system_bars(&app_toggle, target_fullscreen) {
-              success = true;
-              break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(30));
+        let mut success = false;
+        for _ in 0..5 {
+          if toggle_system_bars(&app_toggle, target_fullscreen) {
+            success = true;
+            break;
           }
+        }
 
-          if success {
-            force_orientation_flip(&app_toggle);
-            std::thread::sleep(std::time::Duration::from_millis(150));
-            restore_orientation(&app_toggle);
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            force_view_refresh(&app_toggle);
-
+        if success {
+          std::thread::spawn(move || {
             if !target_fullscreen {
               std::thread::sleep(std::time::Duration::from_millis(100));
-              simulate_statusbar_swipe(&app_toggle);
+              let app_swipe = app_toggle.clone();
+              let _ = slint::invoke_from_event_loop(move || {
+                simulate_statusbar_swipe(&app_swipe);
+              });
             }
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            force_view_refresh(&app_toggle);
+            std::thread::sleep(std::time::Duration::from_millis(150));
 
             for _ in 0..10 {
               if let Some(new_insets) = get_insets(&app_toggle) {
@@ -211,14 +213,20 @@ fn android_main(app: android_activity::AndroidApp) {
               }
               std::thread::sleep(std::time::Duration::from_millis(50));
             }
-          }
-        });
+          });
+        }
       }
     }
   });
 
+  if let Some(data_path) = app.internal_data_path() {
+    feat_shared::set_config_dir(data_path);
+  }
+
   feat_shared::run_app(ui);
 
-  // Final Cleanup
-  stop_foreground_service(&app);
+  // Activity was closed without an explicit quit (e.g. freeform window close gesture).
+  // on_quit calls process::exit(0) so this code only runs on normal activity destroy.
+  // Do NOT stop the service — the notification persists and keeps the process alive.
+  // The user can reopen the UI by tapping the notification, or stop via "Stop Service".
 }

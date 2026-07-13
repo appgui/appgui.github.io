@@ -48,5 +48,8 @@
   "files.trimFinalNewlines": true,
   "terminal.integrated.enablePersistentSessions": false,
   "terminal.integrated.persistentSessionReviveProcess": "never",
-  "files.eol": "\n"
+  "files.eol": "\n",
+  "rust-analyzer.cargo.extraEnv": {
+    "SLINT_INCLUDE_GENERATED": "."
+  }
 }

@@ -137,7 +137,7 @@ mod linux_impl {
 
       self.start_updater(handle, ui_weak);
 
-      println!("🔔 Tray icon initialized (ksni/StatusNotifierItem)");
+      println!("[INFO] Tray icon initialised (ksni/StatusNotifierItem)");
       Ok(())
     }
 
@@ -153,16 +153,14 @@ mod linux_impl {
 
           let _ = invoke_from_event_loop(move || {
             if let Some(ui) = ui_weak_clone.upgrade() {
-              let _ = tx.send((ui.get_display_value(), ui.get_display_label()));
+              let _ = tx.send(ui.get_tray_text().to_string());
             }
           });
 
-          if let Ok((display_value, display_label)) = rx.recv_timeout(Duration::from_millis(100)) {
-            let new_tooltip = format!("{}: {}", display_label, display_value);
+          if let Ok(tray_text) = rx.recv_timeout(Duration::from_millis(100)) {
             let old_tooltip = tooltip.lock().unwrap().clone();
-
-            if old_tooltip != new_tooltip {
-              *tooltip.lock().unwrap() = new_tooltip;
+            if old_tooltip != tray_text {
+              *tooltip.lock().unwrap() = tray_text;
               let _ = handle.update(|_| {});
             }
           } else {
@@ -170,13 +168,6 @@ mod linux_impl {
           }
         }
       });
-    }
-
-    pub fn update_tooltip(&self, text: &str) {
-      *self.tooltip.lock().unwrap() = text.to_string();
-      if let Some(handle) = self.handle.lock().unwrap().as_ref() {
-        let _ = handle.update(|_| {});
-      }
     }
   }
 }
@@ -292,7 +283,7 @@ mod desktop_impl {
       });
 
       self.start_updater(ui_weak);
-      println!("🔔 Tray icon initialized (tray-icon)");
+      println!("[INFO] Tray icon initialized (tray-icon)");
       Ok(())
     }
 
@@ -308,25 +299,17 @@ mod desktop_impl {
 
           let _ = invoke_from_event_loop(move || {
             if let Some(ui) = ui_weak_clone.upgrade() {
-              let _ = tx.send((ui.get_display_value(), ui.get_display_label()));
+              let _ = tx.send(ui.get_tray_text().to_string());
             }
           });
 
-          if let Ok((display_value, display_label)) = rx.recv_timeout(Duration::from_millis(100)) {
-            let new_tooltip = format!("{}: {}", display_label, display_value);
-            *tooltip.lock().unwrap() = new_tooltip;
+          if let Ok(tray_text) = rx.recv_timeout(Duration::from_millis(100)) {
+            *tooltip.lock().unwrap() = tray_text;
           } else {
             break;
           }
         }
       });
-    }
-
-    pub fn update_tooltip(&self, text: &str) {
-      *self.tooltip.lock().unwrap() = text.to_string();
-      if let Some(tray) = self.tray_icon.lock().unwrap().as_ref() {
-        let _ = tray.set_tooltip(Some(text));
-      }
     }
   }
 
@@ -336,7 +319,7 @@ mod desktop_impl {
     for _ in 0..(size * size) {
       rgba.extend_from_slice(&[100, 150, 200, 255]);
     }
-    tray_icon::Icon::from_rgba(rgba, size, size).expect("Failed to create default icon")
+    tray_icon::Icon::from_rgba(rgba, size, size).expect("[FAIL] Failed to create default icon")
   }
 }
 
@@ -358,10 +341,7 @@ pub fn setup_tray_callbacks(ui_weak: Weak<AppWindow>) -> Result<(), Box<dyn std:
         .show();
     });
 
-    let state_clone = state.clone();
-    ui.on_update_tray(move |tooltip| {
-      state_clone.update_tooltip(&tooltip);
-    });
+    // Tooltip is maintained by start_updater; no separate on_update_tray handler needed.
   }
 
   Ok(())

@@ -1,7 +1,7 @@
-use crate::jni_utils::try_jni_call;
+use crate::jni_utils::try_jni_call_labeled;
 use android_activity::AndroidApp;
 use feat_shared::AppWindow;
-use jni::objects::JValue;
+use jni::objects::{JClass, JValue};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct InsetsState {
@@ -31,6 +31,7 @@ pub struct AppState {
   pub last_insets: InsetsState,
   pub base_insets: Option<InsetsState>,
   pub initialized: bool,
+  pub ready_ticks: u8,
 }
 
 impl AppState {
@@ -40,32 +41,48 @@ impl AppState {
       last_insets: InsetsState::new(),
       base_insets: None,
       initialized: false,
+      ready_ticks: 0,
     }
   }
 }
 
 pub fn toggle_system_bars(app: &AndroidApp, hide: bool) -> bool {
-  try_jni_call(app, |env, activity| {
-    let window = env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[])?.l()?;
-    let controller = env
-      .call_method(&window, "getInsetsController", "()Landroid/view/WindowInsetsController;", &[])?
+  // InsetsController.hide/show must run on the Java UI thread.
+  // InsetsHelper dispatches via Activity.runOnUiThread.
+  // env.find_class() on a native thread uses the bootstrap classloader and cannot
+  // see app-defined classes — load via the activity's own classloader instead.
+  try_jni_call_labeled(app, "toggle_system_bars", |env, activity| {
+    let class_loader =
+      env.call_method(&activity, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])?.l()?;
+    let class_name = env.new_string("com/mikko/xplatform/InsetsHelper")?;
+    let class_obj = env
+      .call_method(
+        &class_loader,
+        "loadClass",
+        "(Ljava/lang/String;)Ljava/lang/Class;",
+        &[JValue::Object(&class_name)],
+      )?
       .l()?;
-    let type_class = env.find_class("android/view/WindowInsets$Type")?;
-    let system_bars = env.call_static_method(type_class, "systemBars", "()I", &[])?.i()?;
+    let helper_class = JClass::from(class_obj);
 
-    if hide {
-      env.call_method(&controller, "hide", "(I)V", &[JValue::Int(system_bars)])?;
-      env.call_method(&controller, "setSystemBarsBehavior", "(I)V", &[JValue::Int(2)])?;
+    let method = if hide {
+      "hideSystemBars"
     } else {
-      env.call_method(&controller, "show", "(I)V", &[JValue::Int(system_bars)])?;
-    }
+      "showSystemBars"
+    };
+    env.call_static_method(
+      &helper_class,
+      method,
+      "(Landroid/app/Activity;)V",
+      &[JValue::Object(&activity)],
+    )?;
     Ok(())
   })
   .is_some()
 }
 
 pub fn is_portrait_orientation(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
+  try_jni_call_labeled(app, "is_portrait_orientation", |env, activity| {
     let resources =
       env.call_method(&activity, "getResources", "()Landroid/content/res/Resources;", &[])?.l()?;
     let config = env
@@ -77,47 +94,8 @@ pub fn is_portrait_orientation(app: &AndroidApp) -> bool {
   .unwrap_or(true)
 }
 
-pub fn force_orientation_flip(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
-    let resources =
-      env.call_method(&activity, "getResources", "()Landroid/content/res/Resources;", &[])?.l()?;
-    let config = env
-      .call_method(&resources, "getConfiguration", "()Landroid/content/res/Configuration;", &[])?
-      .l()?;
-    let actual = env.get_field(&config, "orientation", "I")?.i()?;
-    let flip_to = if actual == 1 {
-      0
-    } else {
-      1
-    };
-    env.call_method(&activity, "setRequestedOrientation", "(I)V", &[JValue::Int(flip_to)])?;
-    Ok(())
-  })
-  .is_some()
-}
-
-pub fn restore_orientation(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
-    env.call_method(&activity, "setRequestedOrientation", "(I)V", &[JValue::Int(-1)])?;
-    Ok(())
-  })
-  .is_some()
-}
-
-pub fn force_view_refresh(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
-    let window = env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[])?.l()?;
-    let decor = env.call_method(&window, "getDecorView", "()Landroid/view/View;", &[])?.l()?;
-    env.call_method(&decor, "invalidate", "()V", &[])?;
-    env.call_method(&decor, "requestLayout", "()V", &[])?;
-    env.call_method(&decor, "requestApplyInsets", "()V", &[])?;
-    Ok(())
-  })
-  .is_some()
-}
-
 pub fn simulate_statusbar_touch(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
+  try_jni_call_labeled(app, "simulate_statusbar_touch", |env, activity| {
     let window = env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[])?.l()?;
     let decor_view = env.call_method(&window, "getDecorView", "()Landroid/view/View;", &[])?.l()?;
     let system_clock = env.find_class("android/os/SystemClock")?;
@@ -164,7 +142,7 @@ pub fn simulate_statusbar_touch(app: &AndroidApp) -> bool {
 }
 
 pub fn simulate_statusbar_swipe(app: &AndroidApp) -> bool {
-  try_jni_call(app, |env, activity| {
+  try_jni_call_labeled(app, "simulate_statusbar_swipe", |env, activity| {
     let window = env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[])?.l()?;
     let decor_view = env.call_method(&window, "getDecorView", "()Landroid/view/View;", &[])?.l()?;
     let system_clock = env.find_class("android/os/SystemClock")?;
@@ -250,7 +228,7 @@ pub fn simulate_statusbar_swipe(app: &AndroidApp) -> bool {
 }
 
 pub fn get_insets(app: &AndroidApp) -> Option<InsetsState> {
-  try_jni_call(app, |env, activity| {
+  try_jni_call_labeled(app, "get_insets", |env, activity| {
     let window = env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[])?.l()?;
     let decor = env.call_method(&window, "getDecorView", "()Landroid/view/View;", &[])?.l()?;
     let insets =

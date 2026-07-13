@@ -14,18 +14,23 @@ import? "Justpart.desktop.macos.just"
 import? "Justpart.desktop.windows.just"
 
 # mobile
-import "Justpart.mobile.just"
-import? "Justpart.mobile.android.just"
-import? "Justpart.mobile.ios.just"
+import? "Justpart.android.just"
+import? "Justpart.ios.just"
+
+# web
+import? "Justpart.web.just"
 
 _list:
   just --list
 
 _workspace_set:
   #!/usr/bin/env sh
-  mkdir -p ./target 2> /dev/null || true
+  mkdir -p ./target 2> /dev/null \
+  || true
   just _desktop_set
-  just _mobile_set
+  just _android_set
+  # just _ios_set
+  # just _web_set
 
 env:
   #!/usr/bin/env sh
@@ -42,21 +47,15 @@ clean:
 
 format:
   #!/usr/bin/env sh
-  cargo fmt --all
-  slint-lsp format -i ui/**/*.slint
+  cargo fmt --all # essential formatting (Rust code)
 
-release VARIANT:
-  #!/usr/bin/env sh
-  just {{VARIANT}} build --release
-  # case '{{VARIANT}}':
-  #   desktop)
-  #   linux)
-  #   macos)
-  #   windows)
-  #   mobile)
-  #   android)
-  #   ios)
-  #     ;;
-  #   *)
-  #     echo '[FAIL] Unknown variant'
-  # esac
+  if command -v slint-lsp > /dev/null \
+  && command -v dprint > /dev/null; then
+    :
+  else
+    echo '[INFO] Installing linters...'
+    just desktop_set_tools_dev
+  fi
+
+  slint-lsp format -i ui/**/*.slint
+  dprint fmt

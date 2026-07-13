@@ -1,6 +1,8 @@
 # xPlatform
 
-This is a research project for creating a universal boilerplate project using Rust + Slint.
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-green.svg?style=flat)](https://www.gnu.org/licenses/agpl-3.0.en.html)
+
+Proof-of-concept project for creating a universal boilerplate project using Rust + Slint.
 
 ## 0. Initial setup
 
@@ -52,6 +54,8 @@ _desktop package:_
 
 ```sh
 just desktop build
+#   or
+# just linux_build native
 ```
 
 _mobile application:_

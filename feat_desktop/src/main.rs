@@ -2,13 +2,19 @@
 
 mod tray;
 
+use i_slint_backend_winit::WinitWindowAccessor;
 use slint::ComponentHandle;
+use winit::dpi::LogicalSize;
 
 use feat_shared::AppWindow;
 
 fn main() -> Result<(), slint::PlatformError> {
   let ui = AppWindow::new()?;
   ui.set_is_mobile(false);
+
+  ui.window().with_winit_window(|w| {
+    w.set_min_inner_size(Some(LogicalSize::new(500.0_f64, 500.0_f64)));
+  });
 
   let ui_weak = ui.as_weak();
 
@@ -27,11 +33,11 @@ fn main() -> Result<(), slint::PlatformError> {
     std::process::exit(0);
   });
 
-  println!("🚀 Starting app...");
+  println!("[INFO] Starting xPlatform...");
 
   feat_shared::run_app_with_tray(ui, |ui_weak| {
     if let Err(e) = tray::setup_tray_callbacks(ui_weak) {
-      eprintln!("⚠️  Failed to initialize tray icon: {}", e);
+      eprintln!("[FAIL] Failed to initialize tray icon: {}", e);
     }
   });
 

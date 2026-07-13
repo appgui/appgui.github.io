@@ -2,6 +2,7 @@ export component CustomToggleButton inherits Rectangle {
     in property <string> text;
     in property <bool> is-dark: true;
     callback clicked;
+    callback long-pressed;
 
     height: 76px;
     border-radius: 12px;
@@ -10,9 +11,27 @@ export component CustomToggleButton inherits Rectangle {
     animate background { duration: 140ms; }
 
     touch := TouchArea {
-        mouse-cursor: pointer;  // Show pointer cursor on hover
-    clicked => {
+        mouse-cursor: pointer;
+        clicked => {
             root.clicked();
+        }
+
+        // Use pointer-event for fine-grained control
+        pointer-event(pe) => {
+            if (pe.kind == PointerEventKind.down) {
+                long_press_timer.running = true;
+            } else if (pe.kind == PointerEventKind.up || pe.kind == PointerEventKind.cancel) {
+                long_press_timer.running = false;
+            }
+        }
+    }
+
+    long_press_timer := Timer {
+        interval: 500ms;
+        running: false;
+        triggered => {
+            root.long-pressed();
+            self.running = false;
         }
     }
 

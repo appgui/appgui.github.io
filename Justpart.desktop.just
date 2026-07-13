@@ -8,10 +8,12 @@ _desktop_set:
   #!/usr/bin/env sh
   cd ./feat_desktop
 
-  if [ ! -d ./target ] && [ ! -L ./target ]; then
+  if [ ! -d ./target ] \
+  && [ ! -L ./target ]; then
     ln -sf ../target ./target
   fi
-  if [ ! -d ./assets ] && [ ! -L ./assets ]; then
+  if [ ! -d ./assets ] \
+  && [ ! -L ./assets ]; then
     ln -sf ../assets ./assets
   fi
 
@@ -37,14 +39,6 @@ desktop_set_deps:
     echo '[FAIL] Unsupported host'
     exit 1
   fi
-
-desktop_set_tools:
-  #!/usr/bin/env sh
-  cargo install \
-    --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
-      cargo-bundle
-  cargo install slint-lsp --no-default-features --features backend-winit,renderer-femtovg,renderer-skia
 
 desktop_build *ARGS:
   #!/usr/bin/env sh
@@ -74,9 +68,11 @@ desktop ACTION='' TARGET='native' *ARGS:
       # export PATH="$(pwd)/.tools:$PATH"
 
       if [ '{{_is_macos}}' = '1' ]; then
-        just macos build {{TARGET}} {{ARGS}} && exit 0
+        just macos build {{TARGET}} {{ARGS}} \
+        && exit 0
       elif [ '{{_is_linux}}' = '1' ]; then
-        just linux build {{TARGET}} {{ARGS}} && exit 0
+        just linux build {{TARGET}} {{ARGS}} \
+        && exit 0
       fi
 
       just windows build {{TARGET}} {{ARGS}}

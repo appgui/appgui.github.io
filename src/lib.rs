@@ -1,10 +1,13 @@
 slint::include_modules!();
 
+mod config;
 mod features;
-use features::{start_background_updates, theme};
+use features::{setup_login_callbacks, start_background_updates, theme};
 use lazy_static::lazy_static;
 use std::sync::Arc;
 pub use std::sync::atomic::{AtomicBool, Ordering};
+
+pub use config::set_config_dir;
 
 lazy_static! {
   pub static ref WINDOW_VISIBLE: Arc<AtomicBool> = Arc::new(AtomicBool::new(true));
@@ -26,6 +29,7 @@ slint::slint! {
 pub fn run_app(ui: AppWindow) {
   theme::setup_theme_callbacks(ui.as_weak());
   start_background_updates(ui.as_weak());
+  setup_login_callbacks(ui.as_weak());
   ui.run().unwrap();
 }
 
@@ -40,6 +44,7 @@ where
   let ui_weak = ui.as_weak();
   theme::setup_theme_callbacks(ui_weak.clone());
   start_background_updates(ui_weak.clone());
+  setup_login_callbacks(ui.as_weak());
 
   // 1. Initial State Sync
   WINDOW_VISIBLE.store(true, Ordering::SeqCst);
@@ -62,7 +67,7 @@ where
   tray_init(ui_weak.clone());
 
   // 4. Run background loop
-  slint::run_event_loop_until_quit().expect("Failed to run Slint event loop");
+  slint::run_event_loop_until_quit().expect("[FAIL] Failed to run Slint event loop");
 }
 
 pub fn is_window_visible() -> bool {
