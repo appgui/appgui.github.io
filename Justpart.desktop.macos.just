@@ -38,10 +38,6 @@ macos_set_deps:
   brew install imagemagick ninja
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
   && rustup toolchain install stable
-  cargo install \
-    --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
-      cargo-bundle
 
 [macos]
 desktop_set_tools_dev:

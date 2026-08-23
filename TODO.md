@@ -1,6 +1,8 @@
 - [Windows, Linux, MacOS] set correct tray icon
 - [Android] figure out weird text input field behaviour
 
+- clean justfile to avoid displaying unrelated commands (ex: installing fedora deps is irrelevant for debian)
+
 - push notifications / websockets
 - localisations
 

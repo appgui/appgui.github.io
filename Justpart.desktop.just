@@ -40,6 +40,11 @@ desktop_set_deps:
     exit 1
   fi
 
+  cargo install \
+    --git https://github.com/burtonageo/cargo-bundle \
+    --branch master \
+      cargo-bundle
+
 desktop_build *ARGS:
   #!/usr/bin/env sh
   just desktop build native {{ARGS}}

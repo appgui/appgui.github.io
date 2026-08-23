@@ -53,7 +53,7 @@ windows_set_deps:
   # setx /M PATH "%PATH%;$magickDir"
   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$magickDir", "Machine")
 
-  & "C:\\Program Files\\Git\\bin\\bash.exe" -c 'just desktop_set_tools_build'
+  & "C:\\Program Files\\Git\\bin\\bash.exe" -c 'just desktop_set_tools_dev'
 
 [windows]
 desktop_set_tools_dev:

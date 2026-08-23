@@ -3,8 +3,7 @@
 
 set dotenv-load
 set export
-set shell := ["sh", "-c"]
-set windows-shell := ["C:\\Program Files\\Git\\usr\\bin\\sh.exe", "-cu"]
+
 set quiet := true
 
 # desktop
@@ -59,3 +58,11 @@ format:
 
   slint-lsp format -i ui/**/*.slint
   dprint fmt
+
+  echo '[DONE]'
+
+[unix]
+set shell := ["sh", "-c"]
+
+[windows]
+set shell := ["C:\\Program Files\\Git\\usr\\bin\\sh.exe", "-cu"]

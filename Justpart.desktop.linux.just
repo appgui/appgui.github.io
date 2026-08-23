@@ -49,6 +49,8 @@ desktop_set_tools_dev:
     slint-lsp \
       --no-default-features \
       --features backend-winit,renderer-femtovg,renderer-skia
+
+  export DPRINT_INSTALL=${HOME}/.local
   curl -fsSL https://dprint.dev/install.sh | sh
 
 [linux]
@@ -69,20 +71,12 @@ linux_fedora_set_deps:
   #!/usr/bin/env sh
   sudo su -c 'yes | dnf install \
     fontconfig-devel openssl-devel pkg-config rustup'
-  cargo install \
-    --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
-      cargo-bundle
 
 [linux]
 linux_opensuse_set_deps:
   #!/usr/bin/env sh
   sudo su -c 'zypper install -y \
     fontconfig-devel openssl-devel pkg-config rustup squashfs'
-  cargo install \
-    --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
-      cargo-bundle
 
 [linux]
 linux_fedora_set_deps_cc_mac:
