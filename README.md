@@ -4,47 +4,43 @@
 
 Proof-of-concept project for creating a universal boilerplate project using Rust + Slint.
 
-## 0. Initial setup
+## 0. Initial setup (runtime dependencies)
 
 _Installing host dependencies (minimum for native app compilation)_
 
-#### A. Universal command (if `just` is already installed):
+#### A. Universal command:
 
 ```sh
+# if `nix` package manager is available
+nix develop
+
+# if only `just` is available
 just desktop_set_deps
 ```
 
 #### B. Platform-specific commands:
 
-Linux:
-
 ```sh
+# for Linux:
 ./setup_linux.sh
-```
 
-MacOS:
-
-```sh
+# for MacOS:
 sh ./setup_macos.sh
-```
 
-Windows:
-
-```sh
+# for Windows:
 pwsh ./setup_windows.ps1 || powershell ./setup_windows.ps1
 ```
 
 # 1. Debugging the app natively
 
-_desktop package:_
-
 ```sh
+# (optional) dev dependencies and IDE support
+just desktop_set_tools_dev
+
+# for desktop package
 just desktop run
-```
 
-_mobile application (on connected mobile device):_
-
-```sh
+# for mobile application (on connected mobile device)
 just android run
 ```
 
