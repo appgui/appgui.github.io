@@ -1,4 +1,5 @@
 - Perform application builds for Windows, Linux and MacOS in GitHub build workflow.
+- Ensure package/binary names include architecture for clarity.
 
 ---
 

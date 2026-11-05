@@ -44,7 +44,7 @@ members = ["feat_android", "feat_desktop"]
 resolver = "3"
 
 [workspace.package]
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Mikhail Timofeev <mikko.timofeev@gmail.com>"]
 edition = "2024"
 license-file = "./LICENSE"

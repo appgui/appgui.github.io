@@ -6,7 +6,7 @@ This document outlines the non-automatable actions required to prepare the GitHu
 
 The automated workflow is configured in `.github/workflows/build.yml` and triggers on:
 
-- **Tag Push**: When a tag matching `v*` (e.g., `v1.0.0`) is pushed to GitHub
+- **Tag Push**: When a tag matching `v*` (e.g., `v1.2.3`) is pushed to GitHub
 - **Repository Dispatch**: Manual trigger with type `build-release` (for GitLab integration)
   The workflow builds binary packages for:
 - Linux (x86_64, ARM64)
