@@ -1,4 +1,5 @@
 - Perform application builds for Windows, Linux and MacOS in GitHub build workflow.
+- Correct multiplatform build credentials (and prevent runs for already processed tags).
 - Ensure package/binary names include architecture for clarity.
 
 ---

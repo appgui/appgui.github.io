@@ -42,10 +42,7 @@ macos_set_deps:
 [macos]
 desktop_set_tools_dev:
   #!/usr/bin/env sh
-  cargo install \
-    slint-lsp \
-      --no-default-features \
-      --features backend-winit,renderer-skia
+  cargo install slint-lsp --no-default-features --features backend-winit,renderer-skia
   brew install dprint
 
 macos_build *ARGS:
@@ -62,7 +59,9 @@ macos ACTION='' TARGET='native' *ARGS:
   OUR_PLATFORM="$(just native)"
   if [ '{{TARGET}}' = 'native' ]; then
     export TARGET="${OUR_PLATFORM}"
-  else
+  fi
+
+  if [ "${OUR_PLATFORM}" != "${TARGET}" ]; then
     echo "[INFO] Cross-compilation: ${OUR_PLATFORM} >> {{TARGET}}"
     just cc_to_mac_set_deps {{TARGET}} \
     || exit 1

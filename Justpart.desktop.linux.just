@@ -39,16 +39,12 @@ linux_debian_set_deps:
       libfontconfig1-dev libssl-dev libdbus-1-dev libgtk-3-dev pkg-config rustup
   cargo install \
     --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
       cargo-bundle
 
 [linux]
 desktop_set_tools_dev:
   #!/usr/bin/env sh
-  cargo install \
-    slint-lsp \
-      --no-default-features \
-      --features backend-winit,renderer-femtovg,renderer-skia
+  cargo install slint-lsp --no-default-features --features backend-winit,renderer-femtovg,renderer-skia
 
   export DPRINT_INSTALL=${HOME}/.local
   curl -fsSL https://dprint.dev/install.sh | sh
@@ -104,7 +100,9 @@ linux ACTION='' TARGET='native' *ARGS:
   OUR_PLATFORM="$(just native)"
   if [ '{{TARGET}}' = 'native' ]; then
     export TARGET="${OUR_PLATFORM}"
-  else
+  fi
+
+  if [ "${OUR_PLATFORM}" != "${TARGET}" ]; then
     echo "[INFO] Cross-compilation: ${OUR_PLATFORM} >> {{TARGET}}"
     just cc_to_lin_set_deps {{TARGET}} \
     || exit 1
