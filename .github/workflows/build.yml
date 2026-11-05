@@ -7,7 +7,7 @@ on:
     tags: ['v*']
 
 env:
-  # for signing Windows binary
+  # for signing Windows binary (optional - requires manual setup)
   CERTIFICATE_COMPANY: ${{ secrets.WINDOWS_CERTIFICATE_COMPANY }}
   CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
   CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
@@ -18,37 +18,57 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: ubuntu-latest
+            runner: ubuntu-26.04
           - platform: linux/arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
 
           - platform: windows/amd64
-            runner: windows-latest
+            runner: windows-2025-vs2026 # windows-latest
           # - platform: windows/arm64
-          #   runner: windows-11-arm
+          #   runner: windows-11-vs2026-arm
 
           - platform: macos/arm64
-            runner: macos-latest
+            runner: xcode-27 # macos-latest
 
     runs-on: ${{ matrix.runner }}
 
     steps:
-      # Checkout relevant tag from GitLab
-      - name: Checkout from GitLab
+      # Determine checkout method based on trigger type
+      - name: Checkout source code
         shell: bash
         run: |
-          REPO_URL="${{ github.event.client_payload.gitlab_repo }}"
-          git clone --depth 1 --branch ${{ github.event.client_payload.tag }} $REPO_URL .
+          # Handle both GitHub tag push and repository_dispatch triggers
+          if [ -n "${{ github.event.client_payload.gitlab_repo }}" ]; then
+            # GitLab repository dispatch trigger
+            REPO_URL="${{ github.event.client_payload.gitlab_repo }}"
+            TAG="${{ github.event.client_payload.tag }}"
+            echo "Using GitLab repository dispatch: $REPO_URL@$TAG"
+            git clone --depth 1 --branch "$TAG" "$REPO_URL" .
+          else
+            # GitHub tag push trigger - use checkout action
+            echo "Using GitHub tag trigger: ${{ github.ref }}"
+            git clone --depth 1 --branch "${{ github.ref_name }}" "${{ github.server_url }}/${{ github.repository }}" .
+          fi
 
       - name: Install just
         uses: extractions/setup-just@v2
 
       - name: Build (Android)
         if: matrix.platform == 'linux/amd64'
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+          ANDROID_KEY_ALIAS: release
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           just linux_debian_set_deps
-          just android_setup
-          just android_build
+          # Only run android_setup if we have keystore credentials
+          if [ -n "$ANDROID_KEY_PASSWORD" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ]; then
+            just android_setup
+            just android_build
+          else
+            echo "Skipping Android build: keystore credentials not configured"
+          fi
 
       - name: Build (Linux amd64)
         if: matrix.platform == 'linux/amd64'
@@ -80,23 +100,42 @@ jobs:
           just windows_set_deps
           just windows build aarch64-pc-windows-msvc
 
+      - name: Collect build artifacts
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          # Collect built binaries and APKs
+          find target -name "appgui*" -o -name "appGUI*" -type f -executable 2>/dev/null | while read file; do
+            if [ -f "$file" ]; then
+              cp "$file" release-artifacts/ || true
+            fi
+          done
+          find feat_android/target -name "*.apk" -type f 2>/dev/null | while read file; do
+            if [ -f "$file" ]; then
+              cp "$file" release-artifacts/ || true
+            fi
+          done
+          ls -lah release-artifacts/ || echo "No artifacts collected"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.platform }}
-          path: |
-            target/release/*
-            !target/release/*.d
-            !target/release/build
-            !target/release/deps
-          retention-days: 1
+          path: release-artifacts/
+          retention-days: 5
+          if-no-files-found: warn
 
   create-release-and-pages:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event.client_payload.tag || startsWith(github.ref, 'refs/tags/')
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -113,16 +152,66 @@ jobs:
           mkdir -p release-assets
           mkdir -p public
 
-          # Copy all artifacts to both locations
+          # Copy all artifacts to release directory
           find artifacts -type f -exec cp {} release-assets/ \;
           find artifacts -type f -exec cp {} public/ \;
+
+          # Generate checksums
+          cd release-assets
+          sha256sum * > SHA256SUMS 2>/dev/null || true
+          md5sum * > MD5SUMS 2>/dev/null || true
+          cd ..
+
+          echo "Release assets prepared for version: $VERSION"
+          ls -lah release-assets/
+
+      - name: Create Release Notes
+        run: |
+          VERSION="${{ github.event.client_payload.tag }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+
+          cat > release-notes.md << EOF
+          ## Release ${VERSION}
+
+          ### Build Artifacts
+
+          This release includes binary packages for the following platforms:
+
+          - **Linux x86_64** - Linux GNU C library
+          - **Linux ARM64** - ARM 64-bit architecture
+          - **Windows x86_64** - Windows 10+ with MinGW runtime
+          - **macOS ARM64** - Apple Silicon (M1+)
+          - **Android** - ARM64 APK package
+
+          ### Installation & Verification
+
+          Please verify downloaded files using the provided checksums:
+
+          \`\`\`bash
+          sha256sum -c SHA256SUMS
+          \`\`\`
+
+          ### Release Date
+          #
+          Generated: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+          For more information, visit the [project repository](https://github.com/${{ github.repository }})
+          EOF
+
+          cat release-notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.client_payload.tag || github.ref_name }}
-          name: ${{ github.event.client_payload.tag || github.ref_name }}
-          files: release-assets/*
+          name: Release ${{ github.event.client_payload.tag || github.ref_name }}
+          body_path: release-notes.md
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -133,7 +222,7 @@ jobs:
 
   deploy-to-pages:
     needs: create-release-and-pages
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       pages: write
       id-token: write

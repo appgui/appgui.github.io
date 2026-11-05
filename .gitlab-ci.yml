@@ -25,7 +25,7 @@ trigger-github-multiplatform-build:
           \"event_type\": \"build-release\",
           \"client_payload\": {
             \"tag\": \"$TAG\",
-            \"gitlab_repo\": \"$CI_REPOSITORY_URL\",
+            \"gitlab_repo\": \"$CI_PROJECT_URL.git\",
             \"gitlab_commit\": \"$CI_COMMIT_SHA\"
           }
         }" \
