@@ -54,7 +54,7 @@ pub fn toggle_system_bars(app: &AndroidApp, hide: bool) -> bool {
   try_jni_call_labeled(app, "toggle_system_bars", |env, activity| {
     let class_loader =
       env.call_method(&activity, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])?.l()?;
-    let class_name = env.new_string("com/mikko/xplatform/InsetsHelper")?;
+    let class_name = env.new_string("ch/lehrax/appgui/InsetsHelper")?;
     let class_obj = env
       .call_method(
         &class_loader,

@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 license-file = "./LICENSE"
 repository.workspace = true
-description = "xPlatform mobile"
+description = "appGUI mobile"
 
 # ---
 
@@ -20,8 +20,8 @@ jni = "0.21"
 slint = { version = "1.15", default-features = false, features = ["backend-android-activity-06", "renderer-femtovg", "compat-1-2"] }
 
 [package.metadata.android]
-package = "com.mikko.xplatform"
-apk_name = "xPlatform"
+package = "ch.lehrax.appgui"
+apk_name = "appGUI"
 build_targets = ["aarch64-linux-android"]
 strip = "strip"
 use_aapt2 = true
@@ -47,7 +47,7 @@ name = "android.permission.POST_NOTIFICATIONS"
 [package.metadata.android.application]
 has_code = true
 debuggable = false
-label = "xPlatform"
+label = "appGUI"
 icon = "@mipmap/ic_launcher"
 round_icon = "@mipmap/ic_launcher"
 
@@ -58,7 +58,7 @@ exported = false
 
 [[package.metadata.android.application.activity]]
 name = ".MainActivity"
-label = "xPlatform"
+label = "appGUI"
 launch_mode = "singleTask"
 resizeable_activity = true
 config_changes = "orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout|density"

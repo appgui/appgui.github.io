@@ -1,5 +1,5 @@
 {
-  description = "xPlatform dev env";
+  description = "appGUI dev env";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

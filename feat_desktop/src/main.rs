@@ -33,7 +33,7 @@ fn main() -> Result<(), slint::PlatformError> {
     std::process::exit(0);
   });
 
-  println!("[INFO] Starting xPlatform...");
+  println!("[INFO] Starting appGUI...");
 
   feat_shared::run_app_with_tray(ui, |ui_weak| {
     if let Err(e) = tray::setup_tray_callbacks(ui_weak) {

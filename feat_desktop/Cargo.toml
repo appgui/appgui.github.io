@@ -6,12 +6,12 @@ build = "build.rs"
 edition.workspace = true
 license-file.workspace = true
 repository.workspace = true
-description = "xPlatform desktop"
+description = "appGUI desktop"
 
 # ---
 
 [[bin]]
-name = "xPlatform"
+name = "appGUI"
 path = "src/main.rs"
 
 [build-dependencies]
@@ -44,16 +44,16 @@ tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
 tray-icon = "0.21"
 
 [package.metadata.bundle]
-name = "xPlatform"
-identifier = "com.mikko.xplatform"
+name = "appGUI"
+identifier = "ch.lehrax.appgui"
 # version = "0.0.1"
 icon = ["assets/icon.svg", "assets/icon.ico"] # relative to workspace root (on linux )
 copyright = "Copyright © 2026"
 short_description = "GUI application"
 
 [package.metadata.winresource]
-OriginalFilename = "xPlatform.exe"
+OriginalFilename = "appGUI.exe"
 LegalCopyright = "Copyright © 2026"
 FileDescription = "GUI application"
-ProductName = "xPlatform"
+ProductName = "appGUI"
 # ProductVersion = "0.0.1"

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S just --justfile
 
 # variables
-_app_name_macos := "xPlatform"
+_app_name_macos := "appGUI"
 _target_mac_arm64 := "aarch64-apple-darwin"
 
 _is_supported_target_mac TARGET:

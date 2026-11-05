@@ -1,6 +1,6 @@
 #!/usr/bin/env -S just --justfile
 
-_app_name_windows := "xplatform"
+_app_name_windows := "appgui"
 _target_win_amd64 := 'x86_64-pc-windows-gnu'
 _target_win_amd64_proprietary := 'x86_64-pc-windows-msvc'
 _target_win_arm64 := 'aarch64-pc-windows-msvc' # Windows on ARM, not tested

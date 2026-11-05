@@ -1,4 +1,4 @@
-package com.mikko.xplatform;
+package ch.lehrax.appgui;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -10,7 +10,7 @@ import android.os.IBinder;
 
 public class TrayService extends Service {
   private static final int NOTIFICATION_ID = 1337;
-  private static final String CHANNEL_ID = "xplatform_tray_v6";
+  private static final String CHANNEL_ID = "startui_tray_v6";
 
   public static volatile boolean stopRequested = false;
 
@@ -19,7 +19,7 @@ public class TrayService extends Service {
     super.onCreate();
     NotificationManager manager = getSystemService(NotificationManager.class);
     if (manager != null) {
-      NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "xPlatform", NotificationManager.IMPORTANCE_LOW);
+      NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "appGUI", NotificationManager.IMPORTANCE_LOW);
       channel.setSound(null, null);
       manager.createNotificationChannel(channel);
     }
@@ -44,7 +44,7 @@ public class TrayService extends Service {
   public IBinder onBind(Intent intent) { return null; }
 
   private Notification buildNotification(String text) {
-    Intent toggleIntent = new Intent("com.mikko.xplatform.TOGGLE");
+    Intent toggleIntent = new Intent("ch.lehrax.appgui.TOGGLE");
     toggleIntent.setClassName(getPackageName(), getPackageName() + ".MainActivity");
     toggleIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
     PendingIntent togglePending = PendingIntent.getActivity(this, 0, toggleIntent,
@@ -56,7 +56,7 @@ public class TrayService extends Service {
         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
     return new Notification.Builder(this, CHANNEL_ID)
-      .setContentTitle("xPlatform")
+      .setContentTitle("appGUI")
       .setContentText(text)
       .setSmallIcon(android.R.drawable.ic_dialog_info)
       .setOngoing(true)
@@ -65,5 +65,3 @@ public class TrayService extends Service {
       .build();
   }
 }
-
-

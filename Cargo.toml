@@ -44,11 +44,11 @@ members = ["feat_android", "feat_desktop"]
 resolver = "3"
 
 [workspace.package]
-version = "0.0.1"
+version = "1.0.0"
 authors = ["Mikhail Timofeev <mikko.timofeev@gmail.com>"]
 edition = "2024"
 license-file = "./LICENSE"
-repository = "https://gitlab.com/mikko-timofeev/xPlatform"
+repository = "https://gitlab.com/appgui/appgui.gitlab.io"
 
 [workspace.dependencies]
 lazy_static = "1.5"

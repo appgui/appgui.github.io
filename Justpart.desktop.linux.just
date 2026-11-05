@@ -1,7 +1,7 @@
 #!/usr/bin/env -S just --justfile
 
 # variables
-_app_name_linux := "xPlatform"
+_app_name_linux := "appGUI"
 _target_lin_amd64 := "x86_64-unknown-linux-gnu"
 _target_lin_arm64 := "aarch64-unknown-linux-gnu"
 

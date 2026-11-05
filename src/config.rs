@@ -16,7 +16,7 @@ fn settings_path() -> Option<PathBuf> {
   }
   #[cfg(not(target_os = "android"))]
   {
-    dirs::config_dir().map(|p| p.join("xplatform").join("settings.toml"))
+    dirs::config_dir().map(|p| p.join("appgui").join("settings.toml"))
   }
   #[cfg(target_os = "android")]
   {
