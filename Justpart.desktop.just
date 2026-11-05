@@ -42,7 +42,6 @@ desktop_set_deps:
 
   cargo install \
     --git https://github.com/burtonageo/cargo-bundle \
-    --branch master \
       cargo-bundle
 
 desktop_build *ARGS:
