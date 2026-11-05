@@ -1,0 +1,147 @@
+name: appGUI Build
+
+on:
+  repository_dispatch:
+    types: [build-release]
+  push:
+    tags: ['v*']
+
+env:
+  # for signing Windows binary
+  CERTIFICATE_COMPANY: ${{ secrets.WINDOWS_CERTIFICATE_COMPANY }}
+  CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+  CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+
+          - platform: windows/amd64
+            runner: windows-latest
+          # - platform: windows/arm64
+          #   runner: windows-11-arm
+
+          - platform: macos/arm64
+            runner: macos-latest
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      # Checkout relevant tag from GitLab
+      - name: Checkout from GitLab
+        shell: bash
+        run: |
+          REPO_URL="${{ github.event.client_payload.gitlab_repo }}"
+          git clone --depth 1 --branch ${{ github.event.client_payload.tag }} $REPO_URL .
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Build (Android)
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          just linux_debian_set_deps
+          just android_setup
+          just android_build
+
+      - name: Build (Linux amd64)
+        if: matrix.platform == 'linux/amd64'
+        run: |
+          just linux_debian_set_deps
+          just linux build x86_64-unknown-linux-gnu
+
+      - name: Build (Linux arm64)
+        if: matrix.platform == 'linux/arm64'
+        run: |
+          just linux_debian_set_deps
+          just linux build aarch64-unknown-linux-gnu
+
+      - name: Build (MacOS arm64)
+        if: runner.os == 'macOS'
+        run: |
+          just macos_set_deps
+          just macos build aarch64-apple-darwin
+
+      - name: Build (Windows amd64)
+        if: matrix.platform == 'windows/amd64'
+        run: |
+          just windows_set_deps
+          just windows build x86_64-pc-windows-gnu
+
+      - name: Build (Windows arm64)
+        if: matrix.platform == 'windows/arm64'
+        run: |
+          just windows_set_deps
+          just windows build aarch64-pc-windows-msvc
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.platform }}
+          path: |
+            target/release/*
+            !target/release/*.d
+            !target/release/build
+            !target/release/deps
+          retention-days: 1
+
+  create-release-and-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event.client_payload.tag || startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release and pages assets
+        run: |
+          VERSION="${{ github.event.client_payload.tag }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+
+          # Create directories
+          mkdir -p release-assets
+          mkdir -p public
+
+          # Copy all artifacts to both locations
+          find artifacts -type f -exec cp {} release-assets/ \;
+          find artifacts -type f -exec cp {} public/ \;
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.client_payload.tag || github.ref_name }}
+          name: ${{ github.event.client_payload.tag || github.ref_name }}
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy-to-pages:
+    needs: create-release-and-pages
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

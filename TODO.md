@@ -1,3 +1,7 @@
+- Perform application builds for Windows, Linux and MacOS in GitHub build workflow.
+
+---
+
 - [web] WASM based web release to appgui.gitlab.io, appgui.github.io and appgui.lehrax.ch
 
 - [Windows, Linux, MacOS] set correct tray icon
