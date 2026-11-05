@@ -1,12 +1,6 @@
-# Quick Release Guide for v1.0.0
+# Quick Release Guide
 
-This guide provides quick instructions to release v1.0.0. For complete details, see [PLAN.md](./PLAN.md).
-
-## Current Status
-
-✅ **Version**: Already set to `1.0.0` in Cargo.toml
-✅ **Workflow**: Configured in `.github/workflows/build.yml`
-✅ **Platforms**: Linux (x86_64, ARM64), Windows (x86_64), macOS (ARM64), Android (ARM64)
+This guide provides quick instructions for release process. For complete details, see [PLAN.md](./PLAN.md).
 
 ## Quick Start
 
@@ -32,9 +26,9 @@ See [PLAN.md](./PLAN.md) section "2. Android Release Keystore Setup" for details
 
 ```bash
 # Create annotated tag
-git tag -a v1.0.0 -m "Release version 1.0.0: Production ready"
+git tag -a v1.0.1 -m "Release version 1.0.1: Not production ready"
 # Push to GitHub (triggers workflow)
-git push origin v1.0.0
+git push origin v1.0.1
 ```
 
 ### Step 3: Monitor Build Progress
@@ -64,7 +58,7 @@ The workflow automatically builds:
 | -------------- | ---------- | ---------------------- |
 | Linux x86_64   | appGUI     | Linux executable       |
 | Linux ARM64    | appGUI     | Linux ARM executable   |
-| Windows x86_64 | appgui.exe | Windows 10+ executable |
+| Windows x86_64 | appGUI.exe | Windows 10+ executable |
 | macOS ARM64    | appGUI.app | Apple Silicon bundle   |
 | Android        | appGUI.apk | Android APK package    |
 
@@ -108,18 +102,18 @@ The workflow automatically builds:
 
 ## Next Steps for Future Releases
 
-For subsequent releases (v1.0.1, v1.1.0, etc.):
+For subsequent releases (v1.0.2, v1.1.0, etc.):
 
 1. Update version in `Cargo.toml` (if needed):
    ```toml
    [workspace.package]
-   version = "1.0.1"
+   version = "1.0.2"
    ```
 2. Update `CHANGELOG.md` with changes
 3. Create and push tag:
    ```bash
-   git tag -a v1.0.1 -m "Release version 1.0.1"
-   git push origin v1.0.1
+   git tag -a v1.0.2 -m "Release version 1.0.2"
+   git push origin v1.0.2
    ```
 
 ## Advanced Configuration

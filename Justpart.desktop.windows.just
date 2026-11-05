@@ -1,6 +1,6 @@
 #!/usr/bin/env -S just --justfile
 
-_app_name_windows := "appgui"
+_app_name_windows := "appGUI"
 _target_win_amd64 := 'x86_64-pc-windows-gnu'
 _target_win_amd64_proprietary := 'x86_64-pc-windows-msvc'
 _target_win_arm64 := 'aarch64-pc-windows-msvc' # Windows on ARM, not tested
@@ -45,9 +45,9 @@ cc_to_win_set_deps TARGET:
 [windows]
 windows_set_deps:
   #!pwsh
-  winget install -e --id Rustlang.Rustup
+  winget install -e --id Rustlang.Rustup --source winget --accept-source-agreements --accept-package-agreements
 
-  winget install -e --id ImageMagick.ImageMagick
+  winget install -e --id ImageMagick.ImageMagick --source winget --accept-source-agreements --accept-package-agreements
   $magickDir = (Get-Item "C:\Program Files\ImageMagick-*").FullName
 
   # setx /M PATH "%PATH%;$magickDir"
@@ -63,18 +63,22 @@ desktop_set_tools_dev:
       --no-default-features \
       --features backend-winit,renderer-skia
 
-  # Check if dprint is running
-  $dprintProcess = Get-Process -Name "dprint" -ErrorAction SilentlyContinue
-  if ($dprintProcess) {
-    Write-Host "Running instance of dprint is detected. Stop the process (close your IDE) and press Y to continue or press N to skip" -ForegroundColor Yellow
-    $response = Read-Host
-    if ($response -eq 'Y' -or $response -eq 'y') {
-      iwr https://dprint.dev/install.ps1 -useb | iex
+  # Check if dprint is running (skip in CI)
+  if ($null -eq $env:CI) {
+    $dprintProcess = Get-Process -Name "dprint" -ErrorAction SilentlyContinue
+    if ($dprintProcess) {
+      Write-Host "Running instance of dprint is detected. Stop the process (close your IDE) and press Y to continue or press N to skip" -ForegroundColor Yellow
+      $response = Read-Host
+      if ($response -eq 'Y' -or $response -eq 'y') {
+        iwr https://dprint.dev/install.ps1 -useb | iex
+      } else {
+        Write-Host "Skipping dprint installation" -ForegroundColor Gray
+      }
     } else {
-      Write-Host "Skipping dprint installation" -ForegroundColor Gray
+      iwr https://dprint.dev/install.ps1 -useb | iex
     }
   } else {
-    iwr https://dprint.dev/install.ps1 -useb | iex
+    Write-Host "CI environment detected, skipping dprint installation" -ForegroundColor Gray
   }
 
 windows_build TARGET *ARGS:

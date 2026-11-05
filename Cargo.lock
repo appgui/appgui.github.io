@@ -1163,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "feat_android"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "android-activity 0.6.1",
  "feat_shared",
@@ -1173,7 +1173,7 @@ dependencies = [
 
 [[package]]
 name = "feat_desktop"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "feat_shared",
  "i-slint-backend-winit",
@@ -1190,7 +1190,7 @@ dependencies = [
 
 [[package]]
 name = "feat_shared"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "dirs 5.0.1",
  "lazy_static",
