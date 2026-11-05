@@ -3,7 +3,7 @@ import { CustomToggleButton } from "custom_button.slint";
 
 export component LoginView inherits Rectangle {
     in property <bool> is-dark: true;
-    in-out property <string> server-url: "https://startui.ddns.net/api";
+    in-out property <string> server-url: "https://appgui.lehrax.ch/api";
     callback connect();
     callback cancel();
 
@@ -22,7 +22,7 @@ export component LoginView inherits Rectangle {
 
         server-field := LineEdit {
             text <=> root.server-url;
-            placeholder-text: "https://startui.ddns.net/api";
+            placeholder-text: "https://appgui.lehrax.ch/api";
             width: 360px;
         }
 

@@ -15,7 +15,7 @@ fn make_service_intent<'a>(
   let class_loader =
     env.call_method(activity, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])?.l()?;
 
-  let svc_class_name = env.new_string("com.mikko.xplatform.TrayService")?;
+  let svc_class_name = env.new_string("ch.lehrax.appgui.TrayService")?;
   let svc_class = env
     .call_method(
       &class_loader,
@@ -149,7 +149,7 @@ where
           .l()?;
 
         let size = env.call_method(&services, "size", "()I", &[])?.i()?;
-        let target = env.new_string("com.mikko.xplatform.TrayService")?;
+        let target = env.new_string("ch.lehrax.appgui.TrayService")?;
 
         for i in 0..size {
           let info =

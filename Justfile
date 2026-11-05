@@ -1,5 +1,5 @@
 #!/usr/bin/env -S just --justfile
-# xPlatform - Project Command Runner
+# appGUI - Project Command Runner
 
 set dotenv-load
 set export

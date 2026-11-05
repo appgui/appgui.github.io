@@ -12,7 +12,7 @@
 <!ATTLIST policy value CDATA #IMPLIED>
 ]>
 <!--
-  Local ImageMagick policy override for xPlatform build tooling.
+  Local ImageMagick policy override for appGUI build tooling.
   Permits SVG reading (required for Android icon generation) while
   preserving all other security restrictions from the system policy.
 -->

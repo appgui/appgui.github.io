@@ -1,4 +1,4 @@
-# xPlatform
+# appGUI
 
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-green.svg?style=flat)](https://www.gnu.org/licenses/agpl-3.0.en.html)
 

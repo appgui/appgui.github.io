@@ -26,7 +26,7 @@ mod linux_impl {
 
   impl Tray for SystemTray {
     fn id(&self) -> String {
-      "com.mikko.xplatform".to_string()
+      "ch.lehrax.appgui".to_string()
     }
 
     fn title(&self) -> String {

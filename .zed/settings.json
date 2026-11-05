@@ -5,6 +5,7 @@
   "autosave": "on_focus_change",
   "auto_install_extensions": {
     "dprint": true,
+    "java": true,
     "just": true,
     "toml": true,
     "slint": true,
@@ -35,6 +36,17 @@
     "cargo": {
       "extraEnv": {
         "SLINT_INCLUDE_GENERATED": "."
+      }
+    }
+  },
+  "lsp": {
+    "nil": {
+      "initialization_options": {
+        "nix": {
+          "flake": {
+            "autoArchive": false
+          }
+        }
       }
     }
   }

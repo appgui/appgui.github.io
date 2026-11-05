@@ -1,7 +1,7 @@
 #!/usr/bin/env -S just --justfile
 
 # variables
-_app_name_mobile := "xPlatform"
+_app_name_mobile := "appGUI"
 
 _DN_CN := env("DN_CN", 'Unknown')
 _DN_OU := env("DN_OU", 'Unknown')

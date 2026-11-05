@@ -1,4 +1,4 @@
-package com.mikko.xplatform;
+package ch.lehrax.appgui;
 
 import android.app.ActivityManager;
 import android.app.NativeActivity;
@@ -39,7 +39,7 @@ public class MainActivity extends NativeActivity {
   @Override
   protected void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
-    if (!"com.mikko.xplatform.TOGGLE".equals(intent.getAction())) return;
+    if (!"ch.lehrax.appgui.TOGGLE".equals(intent.getAction())) return;
 
     if (!comingFromBackground) {
       // Activity is still in foreground or only paused (not stopped) → hide
